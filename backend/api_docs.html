@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICS HRMS API Documentation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 98%;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Standard Column Widths */
+    .col-method {
+      width: 70px;
+    }
+
+    .col-endpoint {
+      width: 220px;
+    }
+
+    .col-desc {
+      width: 200px;
+    }
+
+    .col-role {
+      width: 100px;
+    }
+
+    .col-body {
+      width: 25%;
+    }
+
+    .col-resp {
+      width: 25%;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    /* Method Badges */
+    .method {
+      font-weight: bold;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      display: inline-block;
+      width: 55px;
+      text-align: center;
+    }
+
+    .get {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .post {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .put {
+      background-color: #fff3e0;
+      color: #f57c00;
+    }
+
+    .patch {
+      background-color: #fff8e1;
+      color: #fbc02d;
+    }
+
+    .delete {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    /* Code Blocks */
+    pre {
+      background-color: #f8f8f8;
+      padding: 8px;
+      border-radius: 4px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.75em;
+      color: #444;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 200px;
+      white-space: pre-wrap;
+      margin: 0;
+      border: 1px solid #eee;
+    }
+
+    /* Scrollbars */
+    pre::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    pre::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    pre::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+
+    pre::-webkit-scrollbar-thumb:hover {
+      background: #bbb;
+    }
+
+    /* Role Badges */
+    .role-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .role-admin {
+      background-color: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .role-hr {
+      background-color: #fce7f3;
+      color: #9d174d;
+    }
+
+    .role-emp {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .role-all {
+      background-color: #f3f4f6;
+      color: #1f2937;
+    }
+
+    .role-text-admin {
+      color: #3730a3;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+
+    .role-text-hr {
+      color: #9d174d;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+
+    .role-text-emp {
+      color: #166534;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+
+    .role-text-all {
+      color: #1f2937;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>ICS HRMS API Documentation</h1>
+
+  <!-- 1. AUTHENTICATION -->
+  <h2>Authentication <span class="role-badge role-all">Accessible to All</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-method">Method</th>
+        <th class="col-endpoint">Endpoint /api/auth/...</th>
+        <th class="col-desc">Description</th>
+        <th class="col-body">Body / Params</th>
+        <th class="col-resp">Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/login</td>
+        <td>User Login</td>
+        <td>
+          <pre>{
+  "email": "employee@example.com",
+  "password": "password123"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsIn...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsIn...",
+  "user": {
+    "id": "EMP001",
+    "name": "John Doe",
+    "role": "EMPLOYEE",
+    "email": "employee@example.com"
+  }
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/refresh</td>
+        <td>Refresh Token</td>
+        <td>
+          <pre>{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsIn..."
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsIn..."
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/register</td>
+        <td>User Registration</td>
+        <td>
+          <pre>{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "securePass123",
+  "role": "EMPLOYEE",
+  "designation": "Developer",
+  "department": "Engineering",
+  "phone": "9876543210"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "User created successfully",
+  "user": {
+    "id": "EMP001",
+    "email": "john@example.com",
+    "role": "EMPLOYEE"
+  }
+}</pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2. COMMON / SHARED MODULES -->
+  <h2>Common Modules <span class="role-badge role-all" style="background:#fff; border:1px solid #ddd;">Shared
+      Endpoints</span></h2>
+  <p>These routes are typically mounted at the root API level (e.g. <code>/api/attendance</code>) and shared.</p>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-method">Method</th>
+        <th class="col-endpoint">Endpoint</th>
+        <th class="col-desc">Description</th>
+        <th class="col-role">Allowed Roles</th>
+        <th class="col-body">Body / Params</th>
+        <th class="col-resp">Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Attendance -->
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/attendance/punch-in</td>
+        <td>Check In</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{
+  "location": "Head Office",
+  "coordinates": {
+    "latitude": 12.9716,
+    "longitude": 77.5946
+  }
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "status": "Present",
+  "punchIn": "09:00:00",
+  "date": "2026-01-18T00:00:00.000Z",
+  "location": "Head Office"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/api/attendance/punch-out</td>
+        <td>Check Out</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{}</pre>
+        </td>
+        <td>
+          <pre>{
+  "status": "Present",
+  "punchIn": "09:00:00",
+  "punchOut": "18:00:00",
+  "totalHours": "9h 0m"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/attendance/today</td>
+        <td>Today's Status</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>None</pre>
+        </td>
+        <td>
+          <pre>{
+  "punchedIn": true,
+  "punchedOut": false,
+  "punchInTime": "09:00:00",
+  "punchOutTime": null
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/attendance/stats</td>
+        <td>Attendance Stats</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>None</pre>
+        </td>
+        <td>
+          <pre>{
+  "daysPresent": 20,
+  "daysAbsent": 2,
+  "avgHours": "8h 45m",
+  "lateArrivals": 1
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Leaves -->
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/leaves</td>
+        <td>Apply for Leave</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{
+  "type": "Sick",
+  "startDate": "2026-02-01",
+  "endDate": "2026-02-02",
+  "reason": "Viral Fever",
+  "duration": "2 Days"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "_id": "65a123bcde...",
+  "type": "Sick",
+  "status": "Pending",
+  "appliedOn": "2026-01-18"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/leaves</td>
+        <td>Get My Leaves</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>None</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "_id": "65af...",
+    "type": "Sick",
+    "status": "Approved",
+    "startDate": "2026-01-10",
+    "endDate": "2026-01-11",
+    "duration": "2 Days"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/api/leaves/:id</td>
+        <td>Update Status</td>
+        <td><span class="role-text-admin">Admin</span>, <span class="role-text-hr">HR</span></td>
+        <td>
+          <pre>{
+  "status": "Approved",
+  "rejectionReason": null
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "Leave status updated successfully",
+  "leave": {
+    "status": "Approved",
+    "approvedBy": "HR001"
+  }
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Complaints -->
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/complaints</td>
+        <td>Raise Complaint</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{
+  "subject": "System Slow",
+  "description": "My laptop is lagging significantly when running build tasks.",
+  "category": "IT"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "status": "Open",
+  "_id": "65b...",
+  "ticketId": "TKT-1029",
+  "date": "2026-01-18"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/complaints</td>
+        <td>Get My Complaints</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>None</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "_id": "65b...",
+    "ticketId": "TKT-1029",
+    "subject": "System Slow",
+    "status": "Open",
+    "date": "2026-01-18"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/api/complaints/:id</td>
+        <td>Resolve Complaint</td>
+        <td><span class="role-text-admin">Admin</span>, <span class="role-text-hr">HR</span></td>
+        <td>
+          <pre>{
+  "status": "Resolved",
+  "remarks": "RAM upgraded"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "Complaint updated",
+  "complaint": {
+    "status": "Resolved",
+    "resolvedOn": "2026-01-20"
+  }
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Notifications -->
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/notifications</td>
+        <td>Send Notification</td>
+        <td><span class="role-text-admin">Admin</span>, <span class="role-text-hr">HR</span></td>
+        <td>
+          <pre>{
+  "title": "Office Maintenance",
+  "message": "Power cut on Saturday from 10 AM to 2 PM.",
+  "targetAudience": "ALL",
+  "type": "info"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "Notification sent successfully",
+  "recipientCount": 150
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/notifications</td>
+        <td>Get My Notifs</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>?sort=unread</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "_id": "65c...",
+    "title": "Office Maintenance",
+    "message": "Power cut on Saturday...",
+    "read": false,
+    "date": "2026-01-18",
+    "source": "ADMIN"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/api/notifications/:id/read</td>
+        <td>Mark as Read</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>None</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "id": "65c...",
+  "read": true
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/notifications/subscribe</td>
+        <td>Push Subscribe</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{
+  "subscription": {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+    "keys": {
+      "p256dh": "...",
+      "auth": "..."
+    }
+  }
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "Subscribed to push notifications successfully"
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Logs -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/api/logs</td>
+        <td>System Logs</td>
+        <td><span class="role-text-admin">Admin</span></td>
+        <td>
+          <pre>?severity=error&search=login</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "_id": "65d...",
+    "level": "error",
+    "message": "Failed login attempt",
+    "metadata": { "ip": "192.168.1.1" },
+    "timestamp": "2026-01-18T10:00:00Z"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/api/logs</td>
+        <td>Create Log</td>
+        <td><span class="role-text-all">All</span></td>
+        <td>
+          <pre>{
+  "level": "info",
+  "message": "User clicked Button A",
+  "metadata": { "page": "/dashboard" }
+}</pre>
+        </td>
+        <td>
+          <pre>{ "saved": true, "id": "65d..." }</pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 3. ADMIN MODULE -->
+  <h2>Admin Module <span class="role-badge role-admin">Role: ADMIN</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-method">Method</th>
+        <th class="col-endpoint">Endpoint /api/admin/...</th>
+        <th class="col-desc">Description</th>
+        <th class="col-body">Body / Params</th>
+        <th class="col-resp">Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/dashboard</td>
+        <td>Stats</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "kpi": { "totalEmployees": 150, "present": 120 },
+  "charts": { "attendance": [...] },
+  "pendingApprovals": 5
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/profile</td>
+        <td>Profile</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "id": "ADM01",
+  "name": "Admin User",
+  "role": "ADMIN",
+  "email": "admin@ics.com"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/profile/edit</td>
+        <td>Edit Profile</td>
+        <td>
+          <pre>{
+  "phone": "9876543210",
+  "address": "456 Admin St"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "message": "Profile updated"
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Employees -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/employees</td>
+        <td>All Staff</td>
+        <td>
+          <pre>?role=EMPLOYEE&status=Active</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "id": "EMP01",
+    "name": "Alice",
+    "department": "IT",
+    "status": "Active"
+  },
+  {
+    "id": "EMP02",
+    "name": "Bob",
+    "department": "HR",
+    "status": "Active"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/employees/:id</td>
+        <td>Details</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "id": "EMP01",
+  "name": "Alice",
+  "documents": [],
+  "bankDetails": {},
+  "joiningDate": "2023-01-01"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method put">PUT</span></td>
+        <td>/employees/:id</td>
+        <td>Update</td>
+        <td>
+          <pre>{
+  "department": "Engineering",
+  "designation": "Sr. Engineer"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "user": { "id": "EMP01", "department": "Engineering" }
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/employee-bank-details</td>
+        <td>Bank Info</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "empId": "EMP01",
+    "empName": "Alice",
+    "bankName": "HDFC",
+    "accountNo": "XXXXXXXX1234"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/pending-requests</td>
+        <td>Join Requests</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "id": "EMP99",
+    "name": "New User",
+    "status": "Pending",
+    "email": "new@ics.com"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/pending-requests/:id</td>
+        <td>Approve/Reject</td>
+        <td>
+          <pre>?status=approve</pre>
+        </td>
+        <td>
+          <pre>{
+  "message": "User approved",
+  "user": { "id": "EMP99", "status": "Active" }
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Policies/Holidays -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/policies</td>
+        <td>List Policies</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "id": "POL1",
+    "title": "Work From Home",
+    "items": [
+      { "label": "Limit", "value": "2 days/week" }
+    ]
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/policies</td>
+        <td>Add Policy</td>
+        <td>
+          <pre>{
+  "title": "Remote Work",
+  "iconName": "Laptop",
+  "items": [{ "label": "Allowed", "value": "Yes" }]
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "id": "POL2",
+  "title": "Remote Work"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method delete">DELETE</span></td>
+        <td>/policies/:id</td>
+        <td>Remove Policy</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "success": true,
+  "message": "Policy deleted"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/holidays</td>
+        <td>List Holidays</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "id": "HOL1",
+    "name": "New Year",
+    "date": "2026-01-01",
+    "day": "Thursday"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/holidays</td>
+        <td>Add Holiday</td>
+        <td>
+          <pre>{
+  "name": "Republic Day",
+  "date": "2026-01-26",
+  "type": "National"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "id": "HOL2",
+  "name": "Republic Day"
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Payroll -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/salary-structures</td>
+        <td>List Structures</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "empId": "EMP01",
+    "baseSalary": 50000,
+    "hra": 20000,
+    "allowances": 10000
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/salary-structures</td>
+        <td>Create Structure</td>
+        <td>
+          <pre>{
+  "empId": "EMP01",
+  "baseSalary": 60000,
+  "hra": 24000
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "message": "Salary structure created"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/payslips</td>
+        <td>Gen Payslip</td>
+        <td>
+          <pre>{
+  "empId": "EMP01",
+  "month": "January",
+  "year": 2026,
+  "deductions": 2000
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "message": "Payslip generated"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/payslips</td>
+        <td>List Payslips</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "id": "PAY1",
+    "empName": "Alice",
+    "netSalary": 78000,
+    "month": "January"
+  }
+]</pre>
+        </td>
+      </tr>
+
+      <!-- Others -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/documents</td>
+        <td>Doc Overview</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "verificationPending": 5,
+  "totalUploads": 120,
+  "rejected": 2
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method put">PUT</span></td>
+        <td>/documents/:id</td>
+        <td>Verify Doc</td>
+        <td>
+          <pre>{
+  "status": "Verified",
+  "adminComment": "Looks good"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "success": true,
+  "doc": { "status": "Verified" }
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/notifications/fcm-token</td>
+        <td>Save Token</td>
+        <td>
+          <pre>{
+  "token": "fcm_token_string_123...",
+  "deviceType": "web"
+}</pre>
+        </td>
+        <td>
+          <pre>{ "success": true }</pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4. HR MODULE -->
+  <h2>HR Module <span class="role-badge role-hr">Role: HR</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-method">Method</th>
+        <th class="col-endpoint">Endpoint /api/hr/...</th>
+        <th class="col-desc">Description</th>
+        <th class="col-body">Body / Params</th>
+        <th class="col-resp">Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/dashboard</td>
+        <td>Stats</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "totalEmployees": 150,
+  "onLeaveToday": 5,
+  "pendingComplaints": 3
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/profile</td>
+        <td>Profile</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "id": "HR01",
+  "name": "HR Manager",
+  "department": "HR"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/profile</td>
+        <td>Update Profile</td>
+        <td>
+          <pre>{
+  "phone": "9988776655"
+}</pre>
+        </td>
+        <td>
+          <pre>{
+  "updated": true,
+  "user": { "phone": "9988776655" }
+}</pre>
+        </td>
+      </tr>
+
+      <!-- Management -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/employee-complaints</td>
+        <td>Emp Issues</td>
+        <td>
+          <pre>?status=Open</pre>
+        </td>
+        <td>
+          <pre>[
+  {
+    "id": "CMP1",
+    "subject": "Salary Issue",
+    "status": "Open",
+    "raisedBy": "EMP05"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/employee-complaints/:id</td>
+        <td>Resolve Issue</td>
+        <td>
+          <pre>{
+  "status": "Resolved",
+  "remarks": "Process initiated"
+}</pre>
+        </td>
+        <td>
+          <pre>{ "success": true }</pre>
+        </td>
+      </tr>
+
+      <!-- Notifications -->
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/notifications</td>
+        <td>Send Alert</td>
+        <td>
+          <pre>{
+  "title": "Welcome",
+  "message": "Welcome all new joiners",
+  "to": "ALL"
+}</pre>
+        </td>
+        <td>
+          <pre>{ "sent": true, "count": 150 }</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/notifications/sent</td>
+        <td>Sent History</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "title": "Welcome",
+    "date": "2026-01-18",
+    "recipientCount": 150
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/notifications/my</td>
+        <td>Received</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "title": "Policy Update",
+    "from": "ADMIN",
+    "read": false
+  }
+]</pre>
+        </td>
+      </tr>
+
+      <!-- Policies (HR Manage) -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/policies</td>
+        <td>List Policies</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "id": "POL1",
+    "title": "Office Timings",
+    "items": [{ "label": "Start", "value": "9AM" }]
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/policies</td>
+        <td>Add Policy</td>
+        <td>
+          <pre>{
+  "title": "Dress Code",
+  "iconName": "User",
+  "items": [{ "label": "Friday", "value": "Casual" }]
+}</pre>
+        </td>
+        <td>
+          <pre>{ "id": "POL2", "title": "Dress Code" }</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method delete">DELETE</span></td>
+        <td>/policies/:id</td>
+        <td>Delete Policy</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{ "deleted": true }</pre>
+        </td>
+      </tr>
+
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/employees/select</td>
+        <td>Emp List</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  { "id": "EMP01", "name": "Alice" },
+  { "id": "EMP02", "name": "Bob" }
+]</pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 5. EMPLOYEE MODULE -->
+  <h2>Employee Module <span class="role-badge role-emp">Role: EMPLOYEE</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-method">Method</th>
+        <th class="col-endpoint">Endpoint /api/employee/...</th>
+        <th class="col-desc">Description</th>
+        <th class="col-body">Body / Params</th>
+        <th class="col-resp">Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/profile</td>
+        <td>Profile</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "name": "John Doe",
+  "id": "EMP01",
+  "joiningDate": "2023-05-01",
+  "documentsStatus": "Verified"
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method patch">PATCH</span></td>
+        <td>/profile</td>
+        <td>Edit Info</td>
+        <td>
+          <pre>{
+  "emergencyContact": {
+    "name": "Mom",
+    "phone": "9876543210"
+  }
+}</pre>
+        </td>
+        <td>
+          <pre>{ "updated": true }</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/holidays</td>
+        <td>Holidays</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  { "date": "2026-08-15", "name": "Independence Day" },
+  { "date": "2026-10-02", "name": "Gandhi Jayanti" }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/policies</td>
+        <td>Policies</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  { "title": "Leave Policy", "items": [...] },
+  { "title": "WFH Policy", "items": [...] }
+]</pre>
+        </td>
+      </tr>
+
+      <!-- Specific Proxies -->
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/payslips</td>
+        <td>My Payslips</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  {
+    "month": "December",
+    "year": 2025,
+    "netSalary": 48000,
+    "downloadUrl": "/files/payslips/dec25.pdf"
+  }
+]</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/payslips/:id</td>
+        <td>Payslip Detail</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>{
+  "id": "PAY_DEC_25",
+  "breakdown": { "basic": 20000, "hra": 10000 }
+}</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td>/complaints</td>
+        <td>Raise Issue</td>
+        <td>
+          <pre>{
+  "subject": "Chair Broken",
+  "description": "Wheel is stuck"
+}</pre>
+        </td>
+        <td>
+          <pre>{ "id": "CMP99", "status": "Open" }</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td>/notifications</td>
+        <td>My Alerts</td>
+        <td><small>None</small></td>
+        <td>
+          <pre>[
+  { "title": "Salary Credited", "read": false },
+  { "title": "Team Outing", "read": true }
+]</pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+
+</html>

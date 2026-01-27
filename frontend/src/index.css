@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary: Deep Blue #1F3A8A */
+    --primary: 225 64% 33%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Accent: Teal #14B8A6 */
+    --accent: 173 80% 40%;
+    --accent-foreground: 210 40% 98%;
+
+    /* Success: Green #22C55E */
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+
+    /* Warning: Amber #F59E0B */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    /* Dark text for contrast on yellow */
+
+    /* Error: Red #EF4444 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Background: #FFFFFF */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    /* #0F172A */
+
+    /* Cards: #FFFFFF */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Muted: #64748B */
+    --muted: 215 16% 47%;
+    --muted-foreground: 215 16% 47%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
