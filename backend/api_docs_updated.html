@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICS HRMS API Documentation</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-bg: #eff6ff;
+            --secondary: #475569;
+            --border: #e2e8f0;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #1e293b;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #0f172a;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--secondary);
+        }
+
+        .filter-bar {
+            position: sticky;
+            top: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 40px;
+            border: 1px solid var(--border);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            margin-top: 60px;
+            margin-bottom: 20px;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Columns */
+        .col-method {
+            width: 90px;
+        }
+
+        .col-endpoint {
+            width: 200px;
+            word-break: break-all;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: #db2777;
+        }
+
+        .col-desc {
+            width: 180px;
+        }
+
+        .col-role {
+            width: 120px;
+        }
+
+        .col-data {
+            width: 25%;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-badge {
+            border-radius: 99px;
+        }
+
+        .role-ALL {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .role-ADMIN {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .role-HR {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .role-EMPLOYEE {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .method-GET {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .method-POST {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .method-PUT {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .method-PATCH {
+            background: #fefce8;
+            color: #a16207;
+        }
+
+        .method-DELETE {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            margin: 0;
+            white-space: pre-wrap;
+            tab-size: 2;
+        }
+
+        .scrollable {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>ICS HRMS API Documentation</h1>
+            <p>Comprehensive guide to backend endpoints for Admin, HR, and Employees.</p>
+        </header>
+
+        <div class="filter-bar">
+            <strong>Filter:</strong>
+            <select id="methodFilter" onchange="filterTables()">
+                <option value="ALL">All Methods</option>
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+        </div>
+
+        <!-- 1. AUTHENTICATION -->
+        <h2>1. Authentication</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/auth/login</td>
+                        <td>User Login</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "email": "user@user.com",
+  "password": "user@1234"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{
+    "accessToken": "ey.....",
+    "refreshToken": "ey.....",
+    "user": {
+        "id": "EMP004",
+        "name": "user dashboard",
+        "role": "EMPLOYEE",
+        "email": "user@user.com",
+        "profileImage": "https://bjtagahtnyzystdghljn.supabase...."
+    }
+}</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/auth/register</td>
+                        <td>User Registration</td>
+                        <td><span class="badge role-badge role-ALL">Public</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "name": "Jane Doe",
+  "email": "jane1@example.com",
+  "password": "password123",
+  "department": "IT",
+  "designation": "Developer"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{
+    "message": "User created successfully",
+    "user": {
+        "id": "EMP007",
+        "name": "Jane Doe",
+        "email": "jane1@example.com",
+        "role": "EMPLOYEE",
+        "designation": "Developer",
+        "department": "IT",
+        "status": "Pending",
+        "projectStatus": "Bench"
+    }
+}</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/auth/refresh</td>
+                        <td>Refresh Token</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "refreshToken": "eyJhbG..."
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{
+  "accessToken": "eyJhbG..."
+}</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. COMMON MODULES -->
+        <h2>2. Common Modules (Shared)</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Leaves -->
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/leaves</td>
+                        <td>Apply Leave</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "type": "Sick Leave",
+  "startDate": "2024-02-01",
+  "endDate": "2024-02-02",
+  "reason": "Fever"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Leave applied" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/leaves</td>
+                        <td>Get My Leaves</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ...list of leaves ]</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Attendance -->
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/attendance/punch-in</td>
+                        <td>Punch In</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "location": "Office",
+  "coordinates": { "lat": 12, "lng": 77 }
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Present", "punchIn": "09:00" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/attendance/punch-out</td>
+                        <td>Punch Out</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "punchOut": "18:00", "totalHours": "9h" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/attendance/today</td>
+                        <td>Today's Status</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "punchedIn": true, "punchedOut": false }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Complaints -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/complaints</td>
+                        <td>My Complaints</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ...complaints ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/complaints</td>
+                        <td>Raise Complaint</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "subject": "Wifi Issue",
+  "description": "Slow internet",
+  "category": "IT"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "ticketId": "TKT-101", "status": "Open" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Notifications -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/notifications</td>
+                        <td>My Notifications</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">?sort=unread</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/notifications/:id/read</td>
+                        <td>Mark Read</td>
+                        <td><span class="badge role-badge role-ALL">All</span></td>
+                        <td>
+                            <pre class="scrollable">{}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "read": true }</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 3. ADMIN MODULE -->
+        <h2>3. Admin Module</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 1. Dashboard -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/dashboard</td>
+                        <td>Dashboard Stats</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "stats": { "employees": 50 }, "charts": ... }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 2. Profile -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/profile</td>
+                        <td>Get Profile</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "id": "ADM01", "name": "Admin" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/admin/profile/edit</td>
+                        <td>Update Profile</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "phone": "9876543210" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/profile-image</td>
+                        <td>Upload Avatar</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">Form-Data: image (file)</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "url": "..." }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 3. New Requests -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/pending-requests</td>
+                        <td>Pending Registrations</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "id": "EMP05", "status": "Pending" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/admin/pending-requests/:id</td>
+                        <td>Approve/Reject</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?status=approve</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Active" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 4. Employees -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/employees</td>
+                        <td>List Employees</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Active</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "id": "EMP01", "name": "..." } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/employees/:id</td>
+                        <td>Employee Details</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "user": { ... } }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/admin/employees/:id</td>
+                        <td>Update Employee</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "role": "HR", "department": "Ops" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "user": { ... } }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/employee-bank-details</td>
+                        <td>Bank Details</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?bankDetailsStatus=ADDED</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "id": "EMP01", "bankDetails": ... } ]</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 5. Documents -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/documents</td>
+                        <td>All Documents</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Review</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "name": "Resume", "user": "..." } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/admin/documents/:empId/:docId</td>
+                        <td>Review Document</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Verified" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Status updated" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 6. Attendance -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/attendance</td>
+                        <td>Attendance Records</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?date=2024-02-15</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "user": "EMP01", "status": "Present" } ]</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 7. Leaves -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/leaves</td>
+                        <td>Leave Requests</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Pending</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "type": "Sick", "status": "Pending" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/admin/leaves/:id</td>
+                        <td>Approve/Reject</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Approved" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 8. Holidays -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/holidays</td>
+                        <td>Get Holidays</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?month=jan&year=2024</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "title": "New Year", "date": "..." } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/holidays</td>
+                        <td>Add Holiday</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "name": "New Year", "startDate": "2024-01-01" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Created" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-DELETE">DELETE</span></td>
+                        <td class="col-endpoint">/api/admin/holidays/:id</td>
+                        <td>Delete Holiday</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Deleted" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 9. Payslips & Salary -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/payslips</td>
+                        <td>List Payslips</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?month=Jan&year=2024</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/payslips</td>
+                        <td>Generate Payslip</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "empId": "EMP01", "month": "Jan", "year": "2024" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Generated" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/salary-structures</td>
+                        <td>Salary Structures</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "base": 50000 } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/salary-structures</td>
+                        <td>Set Structure</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "empId": "EMP01", "base": 50000, "allowances": ... }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Saved" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 10. Policies -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/policies</td>
+                        <td>Get Policies</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/policies</td>
+                        <td>Create Policy</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "title": "WFH", "items": ["Rule 1"] }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "id": "POL01" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 11. Notifications -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/notifications</td>
+                        <td>Admin Notifs</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/admin/notifications</td>
+                        <td>Send Broadcast</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "title": "Alert", "message": "..." }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "sent": 50 }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 12. Complaints -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/admin/complaints</td>
+                        <td>All Complaints</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Open</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/admin/complaints/:id</td>
+                        <td>Resolve Complaint</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Resolved" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- 13. System Logs -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/logs</td>
+                        <td>System Logs</td>
+                        <td><span class="badge role-badge role-ADMIN">Admin</span></td>
+                        <td>
+                            <pre class="scrollable">?page=1&limit=25</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "logs": [...], "pagination": ... }</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 4. HR MODULE -->
+        <h2>4. HR Module</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/dashboard</td>
+                        <td>HR Dashboard</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "stats": { "leaves": 5 }, "users": ... }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/leaves</td>
+                        <td>Manage Leaves</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Pending</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "type": "Sick", "user": "EMP01" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/hr/leaves/:id</td>
+                        <td>Review Leave</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "status": "Approved"
+  // OR "Rejected" with "rejectionReason"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Leave Approved" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/notifications</td>
+                        <td>Broadcast Notif</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "title": "Holiday",
+  "message": "Office closed on Monday",
+  "targetAudience": "ALL"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "sent": 120 }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/employee-complaints</td>
+                        <td>View Complaints</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 5. EMPLOYEE MODULE -->
+        <h2>5. Employee Module</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/employee/profile</td>
+                        <td>My Profile</td>
+                        <td><span class="badge role-badge role-EMPLOYEE">Employee</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{
+  "id": "EMP001",
+  "name": "John",
+  "package": 1200000,
+  "documents": []
+}</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/employee/profile</td>
+                        <td>Update Profile</td>
+                        <td><span class="badge role-badge role-EMPLOYEE">Employee</span></td>
+                        <td>
+                            <pre class="scrollable">{
+  "phone": "999999999",
+  "address": "New City"
+}</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/employee/documents/upload</td>
+                        <td>Upload Doc</td>
+                        <td><span class="badge role-badge role-EMPLOYEE">Employee</span></td>
+                        <td>
+                            <pre class="scrollable">FormData: file, docId, name, category</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Uploaded" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/employee/payslips</td>
+                        <td>My Payslips</td>
+                        <td><span class="badge role-badge role-EMPLOYEE">Employee</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "month": "Jan", "url": "..." } ]</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 4. HR MODULE -->
+        <h2>4. HR Module</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-method">Method</th>
+                        <th class="col-endpoint">Endpoint</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-role">Allowed Roles</th>
+                        <th class="col-data">Body / Params</th>
+                        <th class="col-data">Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dashboard & Profile -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/dashboard</td>
+                        <td>HR Dashboard Stats</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "stats": { "employees": 10, "leaveRequests": 2 } }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/profile</td>
+                        <td>Get Profile</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "id": "HR01", "name": "..." }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/hr/profile</td>
+                        <td>Update Profile</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "phone": "1234567890" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/profile-image</td>
+                        <td>Upload Avatar</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">Form-Data: image (file)</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "url": "..." }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Employee Management -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/employees</td>
+                        <td>List Employees</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Active</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "id": "EMP01", "name": "..." } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/employees/select</td>
+                        <td>Select Options</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "value": "EMP01", "label": "John" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/pending-requests</td>
+                        <td>Registration Requests</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "name": "New User", "status": "Pending" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/hr/pending-requests/:id</td>
+                        <td>Approve/Reject User</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">?status=approve</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Active" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Complaints -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/employee-complaints</td>
+                        <td>All Complaints</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "subject": "Issue", "status": "Open" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/hr/employee-complaints/:id</td>
+                        <td>Update Complaint</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Resolved", "notes": "Done" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/my-complaints</td>
+                        <td>My Complaints</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/my-complaints</td>
+                        <td>Raise Complaint</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "subject": "Wifi", "category": "IT" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "ticketId": "..." }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Notifications -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/notifications/sent</td>
+                        <td>Sent Notifications</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ { "title": "Meeting", "to": "All" } ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/notifications/my</td>
+                        <td>My Notifications</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/notifications</td>
+                        <td>Send Notification</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "title": "Hi", "to": "EMP01" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "sent": true }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PATCH">PATCH</span></td>
+                        <td class="col-endpoint">/api/hr/notifications/:id</td>
+                        <td>Mark Read</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "read": true }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Leaves -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/leaves</td>
+                        <td>Leave Requests</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">?status=Pending</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-PUT">PUT</span></td>
+                        <td class="col-endpoint">/api/hr/leaves/:id</td>
+                        <td>Approve Leave</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "status": "Approved" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "message": "Updated" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Policies (Shared with Admin) -->
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/policies</td>
+                        <td>Get Policies</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">None</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/policies</td>
+                        <td>Create Policy</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">{ "title": "New Policy" }</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "id": "POL05" }</pre>
+                        </td>
+                    </tr>
+
+                    <!-- Documents -->
+                    <tr>
+                        <td><span class="badge method-POST">POST</span></td>
+                        <td class="col-endpoint">/api/hr/documents/upload</td>
+                        <td>Upload Document</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">Form-Data: file, category</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">{ "url": "..." }</pre>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge method-GET">GET</span></td>
+                        <td class="col-endpoint">/api/hr/attendance</td>
+                        <td>View Attendance</td>
+                        <td><span class="badge role-badge role-HR">HR</span></td>
+                        <td>
+                            <pre class="scrollable">?date=2024-01-01</pre>
+                        </td>
+                        <td>
+                            <pre class="scrollable">[ ... ]</pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        const method = document.getElementById('methodFilter').value;
+        const rows = document.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+        if (method === 'ALL') {
+        row.style.display = '';
+        return;
+        }
+
+        // Look for method badge inside the row
+        const methodBadge = row.querySelector('.badge');
+        if (methodBadge && methodBadge.textContent.trim() === method) {
+        row.style.display = '';
+        } else {
+        row.style.display = 'none';
+        }
+        });
+        }
+        </script>
+</body>
+
+</html>
