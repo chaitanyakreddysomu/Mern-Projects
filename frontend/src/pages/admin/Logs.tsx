@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -101,7 +102,7 @@ export default function AdminLogs() {
             if (moduleFilter !== 'All') params.append('module', moduleFilter);
             if (severityFilter !== 'All') params.append('severity', severityFilter);
 
-            const response = await fetch(`/api/logs?${params.toString()}`, {
+            const response = await apiFetch(`/api/logs?${params.toString()}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -142,7 +143,7 @@ export default function AdminLogs() {
     // Client-side filtering is no longer needed as the server handles it
     const filteredLogs = logs;
 
-    const uniqueModules = Array.from(new Set(logs.map(log => log.module)));
+
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

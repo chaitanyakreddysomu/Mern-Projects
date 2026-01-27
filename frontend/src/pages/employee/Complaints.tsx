@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ export default function Complaints() {
     const fetchComplaints = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/complaints', {
+            const res = await apiFetch('/api/employee/complaints', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -66,10 +67,9 @@ export default function Complaints() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/complaints', {
+            const res = await apiFetch('/api/employee/complaints', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ subject, description })

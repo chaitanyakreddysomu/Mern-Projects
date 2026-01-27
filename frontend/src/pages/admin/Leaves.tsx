@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -38,7 +39,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+
 
 interface LeaveRequest {
     _id: string; // Mongo ID
@@ -96,7 +97,7 @@ export default function AdminLeaves() {
                 params.append('order', sortConfig.direction);
             }
 
-            const res = await fetch(`http://localhost:5000/api/admin/leaves?${params}`, {
+            const res = await apiFetch(`/api/admin/leaves?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -150,11 +151,10 @@ export default function AdminLeaves() {
     const performStatusUpdate = async (id: string, status: string, reason?: string) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/leaves/${id}`, {
+            const res = await apiFetch(`/api/admin/leaves/${id}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     status,

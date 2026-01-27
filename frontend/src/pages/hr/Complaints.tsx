@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,6 @@ import {
     Search,
     Eye,
 } from "lucide-react";
-import { MOCK_COMPLAINTS } from "@/data/mock";
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import {
@@ -29,41 +29,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Mock data for Employee Complaints management view
-const ALL_EMPLOYEE_COMPLAINTS = [
-    {
-        id: "C101",
-        userId: "EMP001",
-        userName: "John Doe",
-        subject: "Air Conditioning malfunction",
-        description: "The AC in the engineering bay has been down for 2 days. It is becoming impossible to work.",
-        date: "2026-01-07T10:00:00",
-        status: "Open",
-        avatar: "https://i.pravatar.cc/150?u=1",
-        department: "Engineering"
-    },
-    {
-        id: "C102",
-        userId: "EMP005",
-        userName: "Michael Wilson",
-        subject: "Payroll Discrepancy",
-        description: "I received less salary than expected for this month. Please check the deductions.",
-        date: "2026-01-05T14:30:00",
-        status: "Investigating",
-        avatar: "https://i.pravatar.cc/150?u=5",
-        department: "Sales"
-    },
-    {
-        id: "C103",
-        userId: "EMP002",
-        userName: "Jane Smith",
-        subject: "Harassment Report",
-        description: "Confidential report regarding workplace conduct.",
-        date: "2026-01-04T09:15:00",
-        status: "Resolved",
-        avatar: "https://i.pravatar.cc/150?u=2",
-        department: "Marketing"
-    }
-];
+// Mock data for Employee Complaints management view
 
 const TextareaSimple = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
     ({ className, ...props }, ref) => {
@@ -112,7 +78,7 @@ export default function HRComplaints() {
             if (filterStatus !== 'All') queryParams.append('status', filterStatus);
             if (debouncedSearch) queryParams.append('search', debouncedSearch);
 
-            const res = await fetch(`/api/hr/employee-complaints?${queryParams.toString()}`, {
+            const res = await apiFetch(`/api/hr/employee-complaints?${queryParams.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -131,7 +97,7 @@ export default function HRComplaints() {
         setMyLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/my-complaints', {
+            const res = await apiFetch('/api/hr/my-complaints', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -157,10 +123,9 @@ export default function HRComplaints() {
         if (!selectedComplaint) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/hr/employee-complaints/${selectedComplaint._id}?update=${status}`, {
+            const res = await apiFetch(`/api/hr/employee-complaints/${selectedComplaint._id}?update=${status}`, {
                 method: 'PATCH',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ status })
@@ -181,10 +146,9 @@ export default function HRComplaints() {
         if (!newComplaint.subject || !newComplaint.description) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/my-complaints', {
+            const res = await apiFetch('/api/hr/my-complaints', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(newComplaint)

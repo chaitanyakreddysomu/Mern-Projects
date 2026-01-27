@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import {
     Search,
     Download,
     Building2,
-    Filter,
+
     Users,
     Clock,
     AlertCircle,
@@ -47,7 +48,7 @@ export default function AdminBankDetails() {
     const fetchBankDetails = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/admin/employee-bank-details', {
+            const res = await apiFetch('/api/admin/employee-bank-details', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

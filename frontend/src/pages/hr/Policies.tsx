@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Clock,
@@ -79,7 +80,7 @@ export default function HRPolicies() {
         try {
             const token = localStorage.getItem('token');
             // Use HR specific route which we just added
-            const res = await fetch('/api/hr/policies', {
+            const res = await apiFetch('/api/hr/policies', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

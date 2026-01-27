@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Badge } from "@/components/ui/badge";
-import { Search, Edit, ClipboardList, Users, UserCheck, UserX, Eye, EyeOff, Phone, Building2, Heart, AlertCircle, FileText, type LucideIcon, ShieldCheck, Loader2 } from "lucide-react";
+import { Search, Edit, ClipboardList, Users, UserCheck, UserX, Eye, EyeOff, Phone, Building2, Heart, AlertCircle, FileText, ShieldCheck, Loader2, type LucideIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
     Dialog,
@@ -43,7 +44,7 @@ export default function AdminEmployeeManagement() {
                     return;
                 }
 
-                const response = await fetch('http://localhost:5000/api/admin/employees', {
+                const response = await apiFetch('/api/admin/employees', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -102,10 +103,9 @@ export default function AdminEmployeeManagement() {
         try {
             setIsLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/admin/employees/${editEmployee.id}`, {
+            const response = await apiFetch(`/api/admin/employees/${editEmployee.id}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(editEmployee)

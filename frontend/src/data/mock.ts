@@ -119,6 +119,7 @@ export const MOCK_LEAVES: LeaveRequest[] = [
 
 export const MOCK_NOTIFICATIONS: Notification[] = [
     {
+        _id: "N1",
         id: "N1",
         title: "Holiday Reminder",
         message: "Diwali holiday is on 12th Nov.",
@@ -128,6 +129,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
         source: "HR"
     },
     {
+        _id: "N2",
         id: "N2",
         title: "Policy Update",
         message: "WFH policy has been updated. Please check the documents.",
@@ -137,6 +139,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
         source: "ADMIN"
     },
     {
+        _id: "N3",
         id: "N3",
         title: "Team Lunch",
         message: "Team lunch at 1 PM in the cafeteria.",
@@ -146,6 +149,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
         source: "HR"
     },
     {
+        _id: "N4",
         id: "N4",
         title: "System Maintenance",
         message: "Scheduled maintenance on Sat, 10 PM.",
@@ -155,6 +159,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
         source: "SYSTEM"
     },
     {
+        _id: "N5",
         id: "N5",
         title: "New Project Assignment",
         message: "You have been assigned to Project Phoenix.",
@@ -164,6 +169,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
         source: "ADMIN"
     },
     {
+        _id: "N6",
         id: "N6",
         title: "Appraisal Started",
         message: "Year-end appraisal process has started.",

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,7 @@ export default function Profile() {
         const fetchProfile = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/employee/profile', { // Relative path
+                const res = await apiFetch('/api/employee/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -76,7 +77,7 @@ export default function Profile() {
                 const imageFormData = new FormData();
                 imageFormData.append('image', selectedFile);
 
-                const imgRes = await fetch('/api/employee/profile-image', {
+                const imgRes = await apiFetch('/api/employee/profile-image', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: imageFormData
@@ -91,10 +92,9 @@ export default function Profile() {
             if (!uploadSuccess && selectedFile) return;
 
             // 2. Update Profile Data
-            const res = await fetch('/api/employee/profile', { // Relative
+            const res = await apiFetch('/api/employee/profile', {
                 method: 'PATCH',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)

@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/config/api";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, Command, Bell, RefreshCw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +8,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/context/ToastContext";
@@ -18,7 +19,6 @@ export function Topbar() {
     const { addToast } = useToast();
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const lastNotifIdRef = useRef<string | null>(null);
 
     // Initialize Firebase Cloud Messaging
     useEffect(() => {
@@ -47,10 +47,9 @@ export function Topbar() {
                         else if (navigator.userAgent.indexOf("Firefox") != -1) deviceName += " (Firefox)";
                         else if (navigator.userAgent.indexOf("Safari") != -1) deviceName += " (Safari)";
 
-                        await fetch('/api/notifications/register-fcm', {
+                        await apiFetch('/api/notifications/register-fcm', {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${authToken}`
                             },
                             body: JSON.stringify({ token, device: deviceName })
@@ -106,10 +105,10 @@ export function Topbar() {
         try {
             const token = localStorage.getItem('token');
             const endpoint = user.role === 'ADMIN'
-                ? 'http://localhost:5000/api/admin/notifications'
-                : 'http://localhost:5000/api/admin/notifications';
+                ? '/api/admin/notifications'
+                : '/api/employee/notifications';
 
-            const res = await fetch(endpoint, {
+            const res = await apiFetch(endpoint, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -140,9 +139,8 @@ export function Topbar() {
         if (refreshToken) {
             try {
                 // Attempt to refresh the token
-                const res = await fetch('http://localhost:5000/api/auth/refresh', {
+                const res = await apiFetch('/api/auth/refresh', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refreshToken })
                 });
 
@@ -159,7 +157,7 @@ export function Topbar() {
         window.location.reload();
     };
 
-    const handleNotificationClick = (id: string) => {
+    const handleNotificationClick = (_id: string) => {
         navigate(user?.role === 'ADMIN' ? '/admin-notifications' : '/notifications');
     };
 
@@ -253,7 +251,7 @@ export function Topbar() {
 
                                     try {
                                         const token = localStorage.getItem('token');
-                                        const res = await fetch('/api/notifications/test-fcm', {
+                                        const res = await apiFetch('/api/notifications/test-fcm', {
                                             method: 'POST',
                                             headers: { 'Authorization': `Bearer ${token}` }
                                         });

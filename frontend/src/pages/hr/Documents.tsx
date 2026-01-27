@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -104,7 +105,7 @@ export default function HRDocuments() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/profile', {
+            const res = await apiFetch('/api/hr/profile', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -146,7 +147,7 @@ export default function HRDocuments() {
         setIsUploading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/documents/upload', {
+            const res = await apiFetch('/api/hr/documents/upload', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -180,7 +181,7 @@ export default function HRDocuments() {
     const handlePreview = async (path: string) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/hr/documents/preview?path=${encodeURIComponent(path)}`, {
+            const res = await apiFetch(`/api/hr/documents/preview?path=${encodeURIComponent(path)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

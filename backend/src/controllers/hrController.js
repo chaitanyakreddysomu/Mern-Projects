@@ -913,6 +913,10 @@ exports.updateLeaveStatus = async (req, res) => {
 
                     const uniqueTokens = [...new Set(tokens.filter(t => t && t.length > 0))];
 
+                    if (uniqueTokens.length === 0) {
+                        console.log(`[HRLeaveNotification] No FCM tokens found for User ID: ${user.id}`);
+                    }
+
                     if (uniqueTokens.length > 0) {
                         const admin = require('../config/firebase');
                         if (admin && typeof admin.messaging === 'function') {

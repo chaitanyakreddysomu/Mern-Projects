@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -7,9 +8,7 @@ import {
     CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_ATTENDANCE } from "@/data/mock";
 import {
     BarChart,
     Bar,
@@ -25,9 +24,7 @@ import {
     CheckCircle2,
     XCircle,
     Timer,
-    BarChart3,
-    LineChart as LineIcon,
-    Repeat,
+
     Coffee,
     Calendar,
     Loader2
@@ -82,8 +79,7 @@ export default function Attendance() {
 
     const [month, setMonth] = useState(now.getMonth());
     const [year, setYear] = useState(now.getFullYear());
-    const [view, setView] = useState<"week" | "month">("week");
-    const [chartType, setChartType] = useState<"bar" | "line">("bar");
+    const [chartType] = useState<"bar" | "line">("bar");
     const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -96,7 +92,7 @@ export default function Attendance() {
             try {
                 const token = localStorage.getItem('token');
                 // Backend uses 0-indexed month
-                const res = await fetch(`/api/attendance?month=${month}&year=${year}`, {
+                const res = await apiFetch(`/api/attendance?month=${month}&year=${year}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Coffee, ShieldCheck, Home, BookOpen, FileText, AlertCircle, Briefcase, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/config/api";
 
 const ICON_MAP: Record<string, LucideIcon> = {
     'Clock': Clock,
@@ -67,7 +68,7 @@ export default function Policies() {
         const fetchPolicies = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/employee/policies', {
+                const res = await apiFetch('/api/employee/policies', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

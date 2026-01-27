@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./db');
 
 const compression = require('compression');
+require('./config/firebase'); // Init Firebase Admin
 
 dotenv.config();
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +16,9 @@ import {
     CheckCircle,
     XCircle,
     FileText,
-    Download,
     Clock,
-    User,
-    Building2,
+
+
     BookOpen,
     GraduationCap,
     Briefcase,
@@ -99,7 +99,7 @@ export default function AdminDocuments() {
                 search: searchTerm,
                 status: docStatusFilter
             });
-            const response = await fetch(`http://localhost:5000/api/admin/documents?${queryParams}`, {
+            const response = await apiFetch(`/api/admin/documents?${queryParams}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -288,7 +288,7 @@ function DocumentReviewDialog({ employee, open, onOpenChange }: { employee: Empl
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/documents/${employee.id}`, {
+            const res = await apiFetch(`/api/admin/documents/${employee.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -318,11 +318,10 @@ function DocumentReviewDialog({ employee, open, onOpenChange }: { employee: Empl
         if (!employee) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/documents/${employee.id}/${docId}`, {
+            const res = await apiFetch(`/api/admin/documents/${employee.id}/${docId}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ status, reason })
             });
@@ -348,7 +347,7 @@ function DocumentReviewDialog({ employee, open, onOpenChange }: { employee: Empl
     const handlePreview = async (path: string) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:5000/api/admin/document-preview?path=${encodeURIComponent(path)}`, {
+            const res = await apiFetch(`/api/admin/document-preview?path=${encodeURIComponent(path)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

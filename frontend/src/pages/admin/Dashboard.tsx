@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE_URL, { apiFetch } from "@/config/api"; // Updated import statement
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, Briefcase, AlertTriangle, Activity, UserCheck, Clock, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
                 // Ideally, get token from AuthContext or localStorage
                 const token = localStorage.getItem('token');
 
-                const response = await fetch('http://localhost:5000/api/admin/dashboard', {
+                const response = await apiFetch('/api/admin/dashboard', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
         };
 
         fetchDashboardData();
+        console.log("Admin Dashboard API Base URL:", API_BASE_URL);
     }, []);
 
     // Helper for Pie Chart Labels (Absolute + %)

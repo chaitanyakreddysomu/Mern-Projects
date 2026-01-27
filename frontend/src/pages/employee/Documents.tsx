@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -10,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/context/ToastContext";
 import {
     Eye,
-    Download,
     Upload,
     CheckCircle2,
     Clock,
@@ -107,7 +107,7 @@ export default function Documents() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/profile', {
+            const res = await apiFetch('/api/employee/profile', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -151,7 +151,7 @@ export default function Documents() {
         setIsUploading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/documents/upload', {
+            const res = await apiFetch('/api/employee/documents/upload', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -187,7 +187,7 @@ export default function Documents() {
         try {
             const token = localStorage.getItem('token');
             // Using encodeURIComponent to safely pass the path
-            const res = await fetch(`/api/employee/documents/preview?path=${encodeURIComponent(path)}`, {
+            const res = await apiFetch(`/api/employee/documents/preview?path=${encodeURIComponent(path)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

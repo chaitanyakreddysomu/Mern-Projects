@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -123,7 +124,7 @@ export default function HRAttendance() {
         try {
             const token = localStorage.getItem('token');
             // Fetch for selected month/year
-            const res = await fetch(`/api/attendance?self=true&month=${month}&year=${year}`, {
+            const res = await apiFetch(`/api/attendance?self=true&month=${month}&year=${year}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -140,7 +141,7 @@ export default function HRAttendance() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/hr/attendance?date=${selectedDate}`, {
+            const res = await apiFetch(`/api/hr/attendance?date=${selectedDate}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -162,7 +163,7 @@ export default function HRAttendance() {
         const fetchStats = async () => {
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch('/api/attendance/stats', {
+                const res = await apiFetch('/api/attendance/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

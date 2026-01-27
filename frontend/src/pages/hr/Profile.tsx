@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,7 @@ import {
 } from "lucide-react";
 
 export default function HRProfile() {
-    const { user, login } = useAuth();
+    const { login } = useAuth();
     const { addToast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<any>({});
@@ -44,7 +45,7 @@ export default function HRProfile() {
         const fetchProfile = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/hr/profile', {
+                const res = await apiFetch('/api/hr/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -74,7 +75,7 @@ export default function HRProfile() {
                 const imageFormData = new FormData();
                 imageFormData.append('image', selectedFile);
 
-                const imgRes = await fetch('/api/hr/profile-image', {
+                const imgRes = await apiFetch('/api/hr/profile-image', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: imageFormData
@@ -89,11 +90,10 @@ export default function HRProfile() {
             if (!uploadSuccess && selectedFile) return; // Stop if image upload failed
 
             // 2. Update Profile Data
-            const res = await fetch('/api/hr/profile', {
+            const res = await apiFetch('/api/hr/profile', {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(formData)
             });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -45,7 +46,6 @@ interface Leave {
 export default function Leaves() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [leaves, setLeaves] = useState<Leave[]>([]);
-    const [loading, setLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         type: "Annual",
@@ -57,7 +57,7 @@ export default function Leaves() {
     const fetchLeaves = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/leaves', {
+            const res = await apiFetch('/api/employee/leaves', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -67,7 +67,7 @@ export default function Leaves() {
         } catch (error) {
             console.error("Failed to fetch leaves", error);
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
@@ -78,11 +78,10 @@ export default function Leaves() {
     const handleApplyLeave = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/leaves', {
+            const res = await apiFetch('/api/employee/leaves', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)
             });

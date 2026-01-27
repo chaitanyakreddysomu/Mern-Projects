@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +15,9 @@ import {
     PlusCircle,
     Search,
     Download,
-    FileText,
     Edit,
     Trash2,
-    CheckCircle2,
-    DollarSign,
-    FileCheck
+    CheckCircle2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils"
@@ -84,7 +82,7 @@ export default function HRPayslips() {
     // --- TAB 1 STATE: EMPLOYEE PAYSLIPS (ADMIN LOGIC) ---
     const [empPayslips, setEmpPayslips] = useState<EmployeePayslip[]>([]);
     const [employeesList, setEmployeesList] = useState<any[]>([]);
-    const [loadingEmp, setLoadingEmp] = useState(false);
+
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showPreview, setShowPreview] = useState(false);
@@ -114,8 +112,7 @@ export default function HRPayslips() {
     // --- TAB 2 STATE: MY PAYSLIPS (EMPLOYEE LOGIC) ---
     const [myYear, setMyYear] = useState("2026");
     const [myPayslips, setMyPayslips] = useState<EmployeePayslip[]>([]);
-    const [loadingMy, setLoadingMy] = useState(false);
-    const [selectedMyPayslip, setSelectedMyPayslip] = useState<EmployeePayslip | null>(null);
+
     const [userProfile, setUserProfile] = useState<any>(null);
 
     // --- SHARED STATE ---
@@ -137,7 +134,7 @@ export default function HRPayslips() {
         try {
             const token = localStorage.getItem('token');
             // Using Admin API as requested "Same like Admin"
-            const res = await fetch('/api/admin/payslips', {
+            const res = await apiFetch('/api/admin/payslips', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -154,14 +151,14 @@ export default function HRPayslips() {
             const token = localStorage.getItem('token');
             // Using HR specific select endpoint if available, otherwise fallback to admin or HR employee list
             // Based on hr.js, there IS an endpoint: router.get('/employees/select', auth, hrController.getAllEmployeesForSelect);
-            const res = await fetch('/api/hr/employees/select', {
+            const res = await apiFetch('/api/hr/employees/select', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 setEmployeesList(await res.json());
             } else {
                 // Fallback to admin if HR specific fails or returns empty
-                const resAdmin = await fetch('/api/admin/employees?role=EMPLOYEE&status=Active', {
+                const resAdmin = await apiFetch('/api/admin/employees?role=EMPLOYEE&status=Active', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (resAdmin.ok) setEmployeesList(await resAdmin.json());
@@ -174,7 +171,7 @@ export default function HRPayslips() {
     const fetchSalaryStructures = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/salary-structures', {
+            const res = await apiFetch('/api/admin/salary-structures', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setSalaryStructures(await res.json());
@@ -187,7 +184,7 @@ export default function HRPayslips() {
         try {
             const token = localStorage.getItem('token');
             const url = `/api/admin/salary-structures/calculate/${empId}${structureId ? `?structureId=${structureId}` : ''}`;
-            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await apiFetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
             if (res.ok) {
                 const data = await res.json();
@@ -259,7 +256,6 @@ export default function HRPayslips() {
     const adminNetPay = adminGrossEarnings - adminTotalDeductions;
 
     const handleCreatePayslip = async () => {
-        setLoadingEmp(true);
         const slipData = {
             empId: adminFormData.employee.split('(')[1].replace(')', ''),
             name: adminFormData.employee.split('(')[0].trim(),
@@ -284,15 +280,15 @@ export default function HRPayslips() {
             const token = localStorage.getItem('token');
             let res;
             if (editingId) {
-                res = await fetch(`/api/admin/payslips/${editingId}`, {
+                res = await apiFetch(`/api/admin/payslips/${editingId}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(slipData)
                 });
             } else {
-                res = await fetch(`/api/admin/payslips`, {
+                res = await apiFetch(`/api/admin/payslips`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(slipData)
                 });
             }
@@ -306,8 +302,6 @@ export default function HRPayslips() {
         } catch (error) {
             console.error("Save error", error);
             alert("Error saving payslip");
-        } finally {
-            setLoadingEmp(false);
         }
     };
 
@@ -361,9 +355,9 @@ export default function HRPayslips() {
         if (newStatus !== currentStatus) {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`/api/admin/payslips/${id}`, {
+                const res = await apiFetch(`/api/admin/payslips/${id}`, {
                     method: 'PATCH',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ status: newStatus })
                 });
                 if (res.ok) {
@@ -377,7 +371,7 @@ export default function HRPayslips() {
         if (!confirm("Are you sure you want to delete this payslip?")) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/payslips/${id}`, {
+            const res = await apiFetch(`/api/admin/payslips/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -407,7 +401,7 @@ export default function HRPayslips() {
     const fetchUserProfile = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/profile', {
+            const res = await apiFetch('/api/employee/profile', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setUserProfile(await res.json());
@@ -415,11 +409,10 @@ export default function HRPayslips() {
     };
 
     const fetchMyPayslips = async () => {
-        setLoadingMy(true);
         try {
             const token = localStorage.getItem('token');
             // Using HR API for personal payslips
-            const res = await fetch(`/api/hr/payslips?year=${myYear}`, {
+            const res = await apiFetch(`/api/hr/payslips?year=${myYear}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -427,7 +420,6 @@ export default function HRPayslips() {
                 setMyPayslips(data.map((d: any) => ({ ...d, id: d._id || d.id })));
             }
         } catch (error) { console.error("Failed to fetch my payslips", error); }
-        finally { setLoadingMy(false); }
     };
 
     // My Payslips Totals

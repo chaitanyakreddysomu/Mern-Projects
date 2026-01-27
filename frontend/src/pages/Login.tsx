@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { apiFetch } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, User, Phone, Building, Briefcase, CheckCircle2, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, User, Phone, Building, Briefcase, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import icsLogo from "../assets/ics_logo.jpeg";
 
@@ -44,9 +45,8 @@ export function Login() {
         setSuccessMsg(null);
 
         try {
-            const res = await fetch('http://localhost:5000/api/auth/login', {
+            const res = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(loginData)
             });
 
@@ -68,15 +68,6 @@ export function Login() {
         }
     };
 
-    const handleTestLogin = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
-            login("EMPLOYEE");
-            navigate("/");
-        }, 1000);
-    };
-
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
@@ -93,9 +84,8 @@ export function Login() {
         }
 
         try {
-            const res = await fetch('http://localhost:5000/api/auth/register', {
+            const res = await apiFetch('/api/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: data.fullname,
                     email: data.email,

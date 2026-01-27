@@ -1,4 +1,5 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,17 +15,15 @@ import {
     Eye,
     PlusCircle,
     Search,
-    Download,
     FileText,
     Edit,
-    Trash2,
     CheckCircle2,
-    FileDown,
-    Printer,
     DollarSign,
-    FileCheck
+    Download,
+    Trash2,
+    FileCheck,
+    type LucideIcon
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils"
 import {
@@ -114,6 +113,7 @@ export default function AdminPayslips() {
     const [filterMonth, setFilterMonth] = useState("All");
     const [filterYear, setFilterYear] = useState("All");
 
+
     const [pdfData, setPdfData] = useState<any>(null);
 
     // Form State
@@ -153,7 +153,7 @@ export default function AdminPayslips() {
     const fetchSalaryStructures = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/salary-structures', {
+            const res = await apiFetch('/api/admin/salary-structures', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setSalaryStructures(await res.json());
@@ -168,7 +168,7 @@ export default function AdminPayslips() {
             const token = localStorage.getItem('token');
             // Append structureId if provided
             const url = `/api/admin/salary-structures/calculate/${empId}${structureId ? `?structureId=${structureId}` : ''}`;
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -212,7 +212,7 @@ export default function AdminPayslips() {
         setTableLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/payslips', {
+            const res = await apiFetch('/api/admin/payslips', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -229,7 +229,7 @@ export default function AdminPayslips() {
     const fetchEmployees = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/employees?role=EMPLOYEE,HR&status=Active', {
+            const res = await apiFetch('/api/admin/employees?role=EMPLOYEE,HR&status=Active', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -263,23 +263,7 @@ export default function AdminPayslips() {
         }
     }, [formData.month, formData.year, formData.employee]);
 
-    const fetchLeaveStats = async (empId: string, month: string, year: string) => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/payslips/calculate/stats?empId=${empId}&month=${month}&year=${year}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const stats = await res.json();
-                setFormData(prev => ({
-                    ...prev,
-                    leavesTaken: stats.leavesTaken || 0,
-                }));
-            }
-        } catch (e) {
-            console.error("Failed to fetch leave stats", e);
-        }
-    };
+
 
     // 2. Auto-calculate Paid Days & Leave Deduction
     useEffect(() => {
@@ -304,7 +288,7 @@ export default function AdminPayslips() {
     }, [formData.leavesTaken, formData.totalWorkingDays, formData.basicSalary]);
 
     // --- CALCULATIONS ---
-    const lopDays = formData.leavesTaken; // Alias for display if needed
+
     const grossEarnings = formData.basicSalary;
     const totalDeductions = (formData.pf || 0) + (formData.esi || 0) + (formData.pt || 0) + (formData.tds || 0) + (formData.leaveDeduction || 0);
     const netPay = grossEarnings - totalDeductions;
@@ -337,19 +321,17 @@ export default function AdminPayslips() {
             let res;
 
             if (editingId) {
-                res = await fetch(`/api/admin/payslips/${editingId}`, {
+                res = await apiFetch(`/api/admin/payslips/${editingId}`, {
                     method: 'PATCH',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(slipData)
                 });
             } else {
-                res = await fetch(`/api/admin/payslips`, {
+                res = await apiFetch(`/api/admin/payslips`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(slipData)
@@ -444,11 +426,10 @@ export default function AdminPayslips() {
         if (newStatus !== currentStatus) {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`/api/admin/payslips/${id}`, {
+                const res = await apiFetch(`/api/admin/payslips/${id}`, {
                     method: 'PATCH',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ status: newStatus })
                 });
@@ -467,7 +448,7 @@ export default function AdminPayslips() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/payslips/${id}`, {
+            const res = await apiFetch(`/api/admin/payslips/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -909,8 +890,8 @@ export default function AdminPayslips() {
                                                 </Button>
                                             </div>
                                             <Button variant="ghost" onClick={resetForm}>Cancel</Button>
-                                            <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-                                                {editingId ? "Update Payslip" : "Save & Generate"}
+                                            <Button onClick={handleCreate} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                                                {loading ? "Processing..." : (editingId ? "Update Payslip" : "Save & Generate")}
                                             </Button>
                                         </>
                                     ) : (
@@ -919,8 +900,8 @@ export default function AdminPayslips() {
                                             <Button variant="outline" onClick={() => handleDownload({ ...formData, id: "preview", empId: "", name: formData.employee.split('(')[0].trim(), generatedOn: "", netPay: 0 } as any)} className="gap-2">
                                                 <Download className="h-4 w-4" /> Download PDF
                                             </Button>
-                                            <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-                                                {editingId ? "Update" : "Confirm & Generate"}
+                                            <Button onClick={handleCreate} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                                                {loading ? "Processing..." : (editingId ? "Update" : "Confirm & Generate")}
                                             </Button>
                                         </>
                                     )}

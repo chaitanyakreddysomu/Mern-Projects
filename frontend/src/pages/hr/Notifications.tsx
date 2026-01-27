@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export default function HRNotifications() {
         setSentLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/notifications/sent', {
+            const res = await apiFetch('/api/hr/notifications/sent', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -62,7 +63,7 @@ export default function HRNotifications() {
         try {
             const token = localStorage.getItem('token');
             const query = myFilter === 'unread' ? '?unread=true' : '';
-            const res = await fetch(`/api/hr/notifications/my${query}`, {
+            const res = await apiFetch(`/api/hr/notifications/my${query}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -79,7 +80,7 @@ export default function HRNotifications() {
     const fetchEmployees = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/employees/select', {
+            const res = await apiFetch('/api/hr/employees/select', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -127,11 +128,10 @@ export default function HRNotifications() {
                 type: 'info'
             };
 
-            const res = await fetch('/api/hr/notifications', {
+            const res = await apiFetch('/api/hr/notifications', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
             });
@@ -156,7 +156,7 @@ export default function HRNotifications() {
         if (e) e.stopPropagation();
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/hr/notifications/${id}/read`, {
+            const res = await apiFetch(`/api/hr/notifications/${id}/read`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -211,10 +211,9 @@ export default function HRNotifications() {
         });
 
         const token = localStorage.getItem('token');
-        await fetch("http://localhost:5000/api/notifications/subscribe", {
+        await apiFetch("/api/notifications/subscribe", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(sub)

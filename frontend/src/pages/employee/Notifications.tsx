@@ -1,11 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Info, CheckCircle2, AlertTriangle, BellRing, Check } from "lucide-react";
-import { MOCK_NOTIFICATIONS } from "@/data/mock";
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import type { Notification } from "@/types";
 import {
     Dialog,
@@ -23,12 +24,11 @@ export default function Notifications() {
     const [filter, setFilter] = useState<'all' | 'unread'>('all');
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
 
     const fetchNotifications = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/notifications', {
+            const res = await apiFetch('/api/employee/notifications', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -38,11 +38,10 @@ export default function Notifications() {
         } catch (error) {
             console.error("Failed to fetch notifications", error);
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
-    const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
     const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
@@ -60,7 +59,7 @@ export default function Notifications() {
             if (token) {
                 const authToken = localStorage.getItem('token');
                 try {
-                    const res = await fetch(`/api/notifications/check-fcm-status?token=${encodeURIComponent(token)}`, {
+                    const res = await apiFetch(`/api/notifications/check-fcm-status?token=${encodeURIComponent(token)}`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     if (res.ok) {
@@ -70,13 +69,13 @@ export default function Notifications() {
                             console.warn("Local says registered, but backend mismatch. Resetting.");
                             localStorage.removeItem('fcm_registered');
                             setIsRegistered(false);
-                            setNotificationPermission("default"); // Force UI update
+                            // setNotificationPermission("default"); // Force UI update
                         } else {
                             // Backend says YES, ensure local is synced
                             if (!localReg) {
                                 localStorage.setItem('fcm_registered', 'true');
                                 setIsRegistered(true);
-                                setNotificationPermission("granted");
+                                // setNotificationPermission("granted");
                             }
                         }
                     }
@@ -118,17 +117,16 @@ export default function Notifications() {
                     else if (navigator.userAgent.indexOf("Firefox") != -1) deviceName += " (Firefox)";
                     else if (navigator.userAgent.indexOf("Safari") != -1) deviceName += " (Safari)";
 
-                    await fetch('/api/notifications/register-fcm', {
+                    await apiFetch('/api/notifications/register-fcm', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({ token, device: deviceName })
                     });
 
                     localStorage.setItem('fcm_registered', 'true');
-                    setNotificationPermission("granted");
+                    // setNotificationPermission("granted");
                     setIsRegistered(true);
                     addToast("Live Alerts Enabled for this device!", "success");
                 } catch (error) {
@@ -157,7 +155,7 @@ export default function Notifications() {
         if (e) e.stopPropagation();
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/employee/notifications/${id}`, {
+            const res = await apiFetch(`/api/employee/notifications/${id}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

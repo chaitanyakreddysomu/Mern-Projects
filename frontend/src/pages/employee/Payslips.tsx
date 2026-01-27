@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, CreditCard, Banknote, Calendar, Eye, Download } from "lucide-react";
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -42,14 +43,13 @@ export default function Payslips() {
     const [year, setYear] = useState("2025");
     const [payslips, setPayslips] = useState<Payslip[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null);
     const [pdfData, setPdfData] = useState<Payslip | null>(null);
     const [userProfile, setUserProfile] = useState<any>(null); // To get user name/id if not in payslip object
 
     const fetchUserProfile = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/employee/profile', {
+            const res = await apiFetch('/api/employee/profile', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -65,7 +65,7 @@ export default function Payslips() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/employee/payslips?year=${year}`, {
+            const res = await apiFetch(`/api/employee/payslips?year=${year}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -324,7 +324,7 @@ export default function Payslips() {
                                                                 ? "bg-blue-600 shadow-blue-600/30"
                                                                 : "bg-orange-600 shadow-orange-600/30"
                                                     )}
-                                                    onClick={() => setSelectedPayslip(fullSlip)}
+                                                    onClick={() => { }}
                                                 >
                                                     <Eye className="h-4 w-4" />
                                                     View

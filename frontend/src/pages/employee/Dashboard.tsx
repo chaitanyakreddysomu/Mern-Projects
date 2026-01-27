@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -20,7 +21,6 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { MOCK_NOTIFICATIONS } from "@/data/mock";
 import type { Notification } from "@/types";
 import {
     Dialog,
@@ -85,7 +85,7 @@ export default function EmployeeDashboard() {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // 1. Attendance Status & Stats
-            const statusRes = await fetch('/api/attendance/today', { headers });
+            const statusRes = await apiFetch('/api/attendance/today', { headers });
             if (statusRes.ok) {
                 const data = await statusRes.json();
                 setAttendanceRecord(data);
@@ -102,18 +102,18 @@ export default function EmployeeDashboard() {
                 }
             }
 
-            const statsRes = await fetch('/api/attendance/stats', { headers });
+            const statsRes = await apiFetch('/api/attendance/stats', { headers });
             if (statsRes.ok) setStats(await statsRes.json());
 
             // 2. Notifications
-            const notifRes = await fetch('/api/employee/notifications', { headers });
+            const notifRes = await apiFetch('/api/employee/notifications', { headers });
             if (notifRes.ok) {
                 const data = await notifRes.json();
                 setNotifications(data.filter((n: any) => !n.read));
             }
 
             // 3. Holidays
-            const holidaysRes = await fetch('/api/employee/holidays', { headers });
+            const holidaysRes = await apiFetch('/api/employee/holidays', { headers });
             if (holidaysRes.ok) {
                 const data = await holidaysRes.json();
                 // Filter upcoming only
@@ -151,10 +151,9 @@ export default function EmployeeDashboard() {
             }
 
             const token = localStorage.getItem('token');
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ location: loc })
@@ -188,7 +187,7 @@ export default function EmployeeDashboard() {
             }
             return "00:00:00";
         }
-        const diff = currentTime.getTime() - punchInTime.getTime();
+        const diff = Math.max(0, currentTime.getTime() - punchInTime.getTime());
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -202,6 +201,7 @@ export default function EmployeeDashboard() {
     }, [attendanceRecord]);
 
     const formatHours = (hours: number) => {
+        if (hours < 0) hours = 0;
         const h = Math.floor(hours);
         const m = Math.round((hours - h) * 60);
         if (h === 0 && m === 0) return "0min";

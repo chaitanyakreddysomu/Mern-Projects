@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Edit, ClipboardList, PlusCircle, Users, UserCheck, UserX, Eye, Phone, Building2, Heart, AlertCircle, FileText, type LucideIcon } from "lucide-react";
+import { Search, Edit, ClipboardList, Users, UserCheck, UserX, Eye, Phone, Building2, Heart, AlertCircle, FileText, type LucideIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
     Dialog,
@@ -44,7 +45,7 @@ export default function HREmployeeManagement() {
                 if (projectFilter && projectFilter !== 'All') params.append('project', projectFilter);
                 if (roleFilter && roleFilter !== 'All') params.append('role', roleFilter);
                 const queryString = params.toString() ? `?${params.toString()}` : '';
-                const res = await fetch(`/api/hr/employees${queryString}`, {
+                const res = await apiFetch(`/api/hr/employees${queryString}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

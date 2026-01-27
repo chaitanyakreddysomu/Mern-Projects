@@ -4,6 +4,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { apiFetch } from "@/config/api";
 import { useState, useEffect } from "react";
 import {
     format,
@@ -110,7 +111,7 @@ export default function HRHolidays() {
     const fetchHolidays = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/holidays`, {
+            const res = await apiFetch(`/api/admin/holidays`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -138,10 +139,9 @@ export default function HRHolidays() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/holidays`, {
+            const res = await apiFetch(`/api/admin/holidays`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
@@ -166,10 +166,9 @@ export default function HRHolidays() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/holidays/${editingHolidayId}`, {
+            const res = await apiFetch(`/api/admin/holidays/${editingHolidayId}`, {
                 method: 'PATCH',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
@@ -208,7 +207,7 @@ export default function HRHolidays() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/holidays/${deleteConfirmationId}`, {
+            const res = await apiFetch(`/api/admin/holidays/${deleteConfirmationId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

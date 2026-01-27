@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { useToast } from "@/context/ToastContext";
 import {
     Card,
@@ -67,7 +68,7 @@ export default function HRLeaves() {
     const fetchAllLeaves = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/leaves', {
+            const res = await apiFetch('/api/leaves', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setAllLeaves(await res.json());
@@ -79,7 +80,7 @@ export default function HRLeaves() {
     const fetchMyLeaves = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/leaves/my', {
+            const res = await apiFetch('/api/leaves/my', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setMyLeaves(await res.json());
@@ -120,10 +121,9 @@ export default function HRLeaves() {
     const updateStatus = async (id: string, status: string, reason?: string) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/leaves/${id}`, {
+            const res = await apiFetch(`/api/leaves/${id}`, {
                 method: 'PATCH',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ status, rejectionReason: reason })
@@ -141,10 +141,9 @@ export default function HRLeaves() {
     const handleApplyLeave = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/leaves', {
+            const res = await apiFetch('/api/leaves', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(applyForm)

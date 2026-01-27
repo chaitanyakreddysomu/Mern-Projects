@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function SalaryStructurePage() {
     const fetchStructures = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/salary-structures', {
+            const res = await apiFetch('/api/admin/salary-structures', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -80,10 +81,9 @@ export default function SalaryStructurePage() {
 
             const method = editingId ? 'PATCH' : 'POST';
 
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)
@@ -105,7 +105,7 @@ export default function SalaryStructurePage() {
         if (!confirm("Delete this structure?")) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`/api/admin/salary-structures/${id}`, {
+            await apiFetch(`/api/admin/salary-structures/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

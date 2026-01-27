@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { apiFetch } from "@/config/api";
 import { Info, CheckCircle2, AlertTriangle, BellRing, Check, PlusCircle, Send, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export default function AdminNotifications() {
     const [newTitle, setNewTitle] = useState("");
     const [newMessage, setNewMessage] = useState("");
     const [newTarget, setNewTarget] = useState("ALL");
-    const [newType, setNewType] = useState("info");
+    const [newType] = useState("info");
     const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
     const [employeeSearch, setEmployeeSearch] = useState("");
     const [employeesList, setEmployeesList] = useState<{ id: string, name: string }[]>([]);
@@ -47,7 +48,7 @@ export default function AdminNotifications() {
             const token = localStorage.getItem('token');
             if (!token) return;
 
-            const res = await fetch(`/api/admin/notifications/sent`, {
+            const res = await apiFetch(`/api/admin/notifications/sent`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -78,7 +79,7 @@ export default function AdminNotifications() {
             if (!token) return;
 
             const query = myFilter === 'unread' ? '?sort=unread' : '';
-            const res = await fetch(`/api/admin/notifications${query}`, {
+            const res = await apiFetch(`/api/admin/notifications${query}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -107,7 +108,7 @@ export default function AdminNotifications() {
             const token = localStorage.getItem('token');
             if (!token) return;
 
-            const res = await fetch(`/api/admin/employees?status=Active`, {
+            const res = await apiFetch(`/api/admin/employees?status=Active`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -157,11 +158,10 @@ export default function AdminNotifications() {
                 type: newType
             };
 
-            const res = await fetch(`/api/admin/notifications`, {
+            const res = await apiFetch(`/api/admin/notifications`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload)
             });
@@ -200,7 +200,7 @@ export default function AdminNotifications() {
             const token = localStorage.getItem('token');
             if (!token) throw new Error("No Token");
 
-            const res = await fetch(`/api/admin/notifications/${id}?markasread`, {
+            const res = await apiFetch(`/api/admin/notifications/${id}?markasread`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -244,10 +244,9 @@ export default function AdminNotifications() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        await fetch("/api/notifications/subscribe", {
+        await apiFetch("/api/notifications/subscribe", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(sub)

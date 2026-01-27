@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -27,7 +28,7 @@ export default function HREmployeeRequests() {
             const queryParams = new URLSearchParams({
                 search: searchTerm
             });
-            const response = await fetch(`/api/hr/pending-requests?${queryParams}`, {
+            const response = await apiFetch(`/api/hr/pending-requests?${queryParams}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -51,7 +52,7 @@ export default function HREmployeeRequests() {
     const handleAction = async (id: string, action: 'approve' | 'reject') => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/hr/pending-requests/${id}?status=${action}`, {
+            const response = await apiFetch(`/api/hr/pending-requests/${id}?status=${action}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

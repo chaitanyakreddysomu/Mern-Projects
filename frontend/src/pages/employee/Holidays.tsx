@@ -5,6 +5,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     format,
     startOfMonth,
@@ -85,13 +86,12 @@ const isDateInRange = (date: Date, start: Date, end: Date) => {
 export default function Holidays() {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [holidays, setHolidays] = useState<Holiday[]>([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchHolidays = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/employee/holidays', {
+                const res = await apiFetch('/api/employee/holidays', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -107,7 +107,7 @@ export default function Holidays() {
             } catch (error) {
                 console.error("Failed to fetch holidays", error);
             } finally {
-                setLoading(false);
+                // setLoading(false);
             }
         };
         fetchHolidays();

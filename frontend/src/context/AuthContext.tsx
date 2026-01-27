@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import type { User, Role } from "@/types";
 import { USERS } from "@/data/mock";
 
@@ -31,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 default: return;
             }
 
-            const res = await fetch(endpoint, {
+            const res = await apiFetch(endpoint, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
 

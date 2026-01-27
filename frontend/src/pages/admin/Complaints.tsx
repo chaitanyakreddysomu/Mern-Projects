@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +63,7 @@ export default function AdminComplaints() {
             if (filterStatus !== 'All') queryParams.append('status', filterStatus);
             if (debouncedSearch) queryParams.append('search', debouncedSearch);
 
-            const res = await fetch(`/api/admin/complaints?${queryParams.toString()}`, {
+            const res = await apiFetch(`/api/admin/complaints?${queryParams.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -96,7 +97,7 @@ export default function AdminComplaints() {
         if (!selectedComplaint) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/admin/complaints/${selectedComplaint.id}?update=${status}`, {
+            const res = await apiFetch(`/api/admin/complaints/${selectedComplaint.id}?update=${status}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

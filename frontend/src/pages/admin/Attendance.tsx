@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -75,7 +76,7 @@ export default function AdminAttendance() {
                 params.append('order', sortConfig.direction);
             }
 
-            const res = await fetch(`/api/admin/attendance?${params}`, {
+            const res = await apiFetch(`/api/admin/attendance?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

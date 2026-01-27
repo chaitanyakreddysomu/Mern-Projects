@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Users, UserCheck, UserX, Clock, CheckCircle2, MapPin, Timer, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ export default function HRDashboard() {
         try {
             const token = localStorage.getItem('token');
             // Use HR specific status endpoint
-            const res = await fetch('/api/hr/attendance/status', {
+            const res = await apiFetch('/api/hr/attendance/status', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -97,7 +98,7 @@ export default function HRDashboard() {
     const fetchDashboardData = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/dashboard', {
+            const res = await apiFetch('/api/hr/dashboard', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -158,11 +159,10 @@ export default function HRDashboard() {
             const loc = await getCurrentLocation();
 
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/punch-in', {
+            const res = await apiFetch('/api/hr/punch-in', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ location: loc })
             });
@@ -188,11 +188,10 @@ export default function HRDashboard() {
         setLoadingAttendance(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/punch-out', {
+            const res = await apiFetch('/api/hr/punch-out', {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ location: location || { lat: 0, lng: 0 } })
             });

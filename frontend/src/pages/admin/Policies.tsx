@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/config/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +100,7 @@ export default function AdminPolicies() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/admin/policies', {
+            const res = await apiFetch('/api/admin/policies', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -159,20 +160,18 @@ export default function AdminPolicies() {
         try {
             let res;
             if (editingPolicy) {
-                res = await fetch(`http://localhost:5000/api/admin/policies/${editingPolicy.id}`, {
+                res = await apiFetch(`/api/admin/policies/${editingPolicy.id}`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(payload)
                 });
             } else {
-                res = await fetch('http://localhost:5000/api/admin/policies', {
+                res = await apiFetch('/api/admin/policies', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(payload)
                 });
@@ -193,7 +192,7 @@ export default function AdminPolicies() {
         if (confirm("Are you sure you want to delete this policy?")) {
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch(`http://localhost:5000/api/admin/policies/${id}`, {
+                const res = await apiFetch(`/api/admin/policies/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
