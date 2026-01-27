@@ -1,35 +1,41 @@
 
 const admin = require('firebase-admin');
-// TODO: Generate a new private key from Firebase Console -> Project Settings -> Service Accounts -> Generate New Private Key
-// Save the JSON file as 'service-account.json' in the config folder (DO NOT COMMIT THIS FILE)
-// For now, using a placeholder path or checking if file exists
-try {
-    let serviceAccount;
 
-    // 1. Try Environment Variable (Best for Render/Deployment)
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+try {
+    let credentialConfig;
+
+    // 1. Check for separate environment variables (Preferred for Render to handle newlines correctly)
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        console.log("Attempting to initialize Firebase from Separate Environment Variables");
+        credentialConfig = {
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Important Fix
+        };
+    }
+    // 2. Check for single JSON string environment variable (Legacy/Alternative)
+    else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         try {
-            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            console.log("Attempting to initialize Firebase from Environment Variable");
+            console.log("Attempting to initialize Firebase from FIREBASE_SERVICE_ACCOUNT JSON string");
+            credentialConfig = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         } catch (e) {
             console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT env var:", e.message);
         }
     }
-
-    // 2. Fallback to Local File (Development)
-    if (!serviceAccount) {
+    // 3. Fallback to Local File (Development)
+    else {
         try {
-            serviceAccount = require('./service-account.json');
             console.log("Attempting to initialize Firebase from local file");
+            credentialConfig = require('./service-account.json');
         } catch (e) {
             console.log("No local service-account.json found (Expected in production if using Env vars)");
         }
     }
 
-    if (serviceAccount) {
+    if (credentialConfig) {
         if (!admin.apps.length) {
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(credentialConfig)
             });
             console.log("Firebase Admin Initialized Successfully");
         }
