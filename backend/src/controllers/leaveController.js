@@ -143,10 +143,18 @@ exports.updateLeaveStatus = async (req, res) => {
                     if (uniqueTokens.length > 0) {
                         const admin = require('../config/firebase');
                         if (admin && typeof admin.messaging === 'function') {
-                            await admin.messaging().sendEachForMulticast({
+                            const response = await admin.messaging().sendEachForMulticast({
                                 notification: { title: notifTitle, body: notifMessage },
                                 tokens: uniqueTokens
                             });
+                            console.log(`[LeaveController] FCM Sent: ${response.successCount} success, ${response.failureCount} failure`);
+                            if (response.failureCount > 0) {
+                                response.responses.forEach((resp, idx) => {
+                                    if (!resp.success) {
+                                        console.error(`[LeaveController] Failure for token index ${idx}:`, resp.error);
+                                    }
+                                });
+                            }
                         }
                     }
                 }

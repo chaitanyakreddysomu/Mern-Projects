@@ -133,9 +133,7 @@ export default function AdminDocuments() {
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Employee Documents</h1>
                     </div>
                 </div>
-                <Button onClick={fetchDocuments} variant="outline" size="sm" className="gap-2">
-                    Refresh
-                </Button>
+
             </div>
 
             {/* Stats Cards */}

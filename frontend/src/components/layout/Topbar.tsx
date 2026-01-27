@@ -135,7 +135,27 @@ export function Topbar() {
         return () => clearInterval(interval);
     }, [user]);
 
-    const handleRefreshData = () => {
+    const handleRefreshData = async () => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+            try {
+                // Attempt to refresh the token
+                const res = await fetch('http://localhost:5000/api/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.accessToken);
+                    addToast("Session Refreshed", "success");
+                }
+            } catch (error) {
+                console.error("Token refresh failed:", error);
+            }
+        }
+        // Always reload the page to refresh data
         window.location.reload();
     };
 

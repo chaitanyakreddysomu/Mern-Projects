@@ -1,3 +1,4 @@
+
 const admin = require('firebase-admin');
 // TODO: Generate a new private key from Firebase Console -> Project Settings -> Service Accounts -> Generate New Private Key
 // Save the JSON file as 'service-account.json' in the config folder (DO NOT COMMIT THIS FILE)
