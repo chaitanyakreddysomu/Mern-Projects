@@ -38,7 +38,7 @@ export const requestFCMToken = async (): Promise<string | null> => {
         }
 
         const token = await getToken(messaging, {
-            vapidKey: "BMc6p4U8ZOsORxnJNmKQGekN0qg-cOVQOkDlohylbN8665k6mvMGzi3VUpTwfjyEWHeIqbYFQqQ7rGDMz9eOaaI"
+            vapidKey: import.meta.env.VITE_VAPID_PUBLIC_KEY
         });
 
         if (!token) {

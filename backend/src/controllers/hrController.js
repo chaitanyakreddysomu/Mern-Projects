@@ -928,7 +928,7 @@ exports.updateLeaveStatus = async (req, res) => {
                             if (response.failureCount > 0) {
                                 response.responses.forEach((resp, idx) => {
                                     if (!resp.success) {
-                                        console.error(`[HRLeaveNotification] Failure for token index ${idx}:`, resp.error);
+                                        console.error(`[HRLeaveNotification] Failure for token index ${idx}:`, JSON.stringify(resp.error, null, 2));
                                     }
                                 });
                             }

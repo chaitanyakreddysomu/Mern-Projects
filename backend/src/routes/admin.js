@@ -3,6 +3,9 @@ const adminController = require('../controllers/adminController');
 const logController = require('../controllers/logController');
 const auth = require('../middleware/auth');
 const multer = require('multer');
+const Leave = require('../models/Leave');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -39,7 +42,91 @@ router.get('/attendance', auth, adminController.getAttendanceRecords);
 // Leave Management Routes
 router.get('/leaves', auth, adminController.getLeaveRequests);
 router.get('/leaves/:id', auth, adminController.getLeaveRequestById);
-router.put('/leaves/:id', auth, adminController.updateLeaveStatus);
+router.put('/leaves/:id', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, rejectionReason } = req.body;
+
+        const leave = await Leave.findByIdAndUpdate(
+            id,
+            { status, rejectionReason },
+            { new: true }
+        );
+
+        if (!leave) return res.status(404).json({ message: "Leave not found" });
+
+        // --- NOTIFICATION LOGIC (ADMIN SOURCE) ---
+        try {
+            const user = await User.findOne({ id: leave.userId });
+            if (user) {
+                let notifTitle = "";
+                let notifMessage = "";
+                let notifType = "info";
+
+                const sDate = new Date(leave.startDate).toLocaleDateString();
+                const eDate = new Date(leave.endDate).toLocaleDateString();
+                const dateRange = sDate === eDate ? `on ${sDate}` : `from ${sDate} to ${eDate}`;
+
+                if (status === 'Approved') {
+                    notifTitle = "Leave Approved";
+                    notifMessage = `Your leave request for ${leave.type} ${dateRange} has been approved by Admin.`;
+                    notifType = 'success';
+                } else if (status === 'Rejected') {
+                    notifTitle = "Leave Rejected";
+                    notifMessage = `Your leave request ${dateRange} was rejected by Admin. Reason: ${rejectionReason || "Admin decision"}`;
+                    notifType = 'alert';
+                }
+
+                if (notifTitle) {
+                    // Create Notification
+                    await Notification.create({
+                        title: notifTitle,
+                        message: notifMessage,
+                        to: user.id,
+                        source: 'ADMIN',
+                        type: notifType,
+                        date: new Date()
+                    });
+
+                    // Send FCM
+                    const tokens = [];
+                    if (user.fcmTokens && user.fcmTokens.length > 0) {
+                        user.fcmTokens.forEach(t => tokens.push(t.token));
+                    } else if (user.fcmToken) {
+                        tokens.push(user.fcmToken);
+                    }
+                    const uniqueTokens = [...new Set(tokens.filter(t => t))];
+
+                    if (uniqueTokens.length > 0) {
+                        const adminInfo = require('../config/firebase'); // Avoid name clash
+                        if (adminInfo.messaging) {
+                            const response = await adminInfo.messaging().sendEachForMulticast({
+                                notification: { title: notifTitle, body: notifMessage },
+                                tokens: uniqueTokens
+                            });
+                            console.log(`[AdminLeaveNotification] Sent to ${user.id}: ${response.successCount} success, ${response.failureCount} failure`);
+
+                            if (response.failureCount > 0) {
+                                response.responses.forEach((resp, idx) => {
+                                    if (!resp.success) {
+                                        console.error(`[AdminLeaveNotification] Failure for token index ${idx}:`, JSON.stringify(resp.error, null, 2));
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (nErr) {
+            console.error("Admin Leave Notif Error:", nErr);
+        }
+
+        res.json({ message: "Leave updated", leave });
+    } catch (error) {
+        console.error("Update Leave Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
 
 // Holiday Management Routes
 router.get('/holidays', auth, adminController.getHolidays);

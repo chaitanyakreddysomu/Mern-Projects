@@ -10,6 +10,7 @@ webpush.setVapidDetails(
 );
 
 // Register FCM Token (Multi-device)
+// Register FCM Token (Multi-device)
 exports.registerFCM = async (req, res) => {
     try {
         const { token, device } = req.body;
@@ -21,15 +22,32 @@ exports.registerFCM = async (req, res) => {
         const user = await User.findOne({ id: userId });
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Check if token exists
+        if (!user.fcmTokens) user.fcmTokens = [];
+
+        // 1. Remove this token if it exists on ANY other user (Token Rotation/Reassignment)
+        // This is expensive but necessary if a user logs out and another logs in on same device
+        await User.updateMany(
+            { "fcmTokens.token": token, id: { $ne: userId } },
+            { $pull: { fcmTokens: { token: token } } }
+        );
+
+        // 2. Check if token exists for CURRENT user
         const existingIndex = user.fcmTokens.findIndex(t => t.token === token);
+
         if (existingIndex > -1) {
-            // Update timestamp & device name if changed
+            // Update timestamp
             user.fcmTokens[existingIndex].lastActive = new Date();
+            // Update device name if provided
             if (device) user.fcmTokens[existingIndex].device = device;
         } else {
-            // Add new
-            if (!user.fcmTokens) user.fcmTokens = [];
+            // Add new token
+            // Optional: Limit number of tokens per user (e.g., max 5) to prevent bloat
+            if (user.fcmTokens.length >= 5) {
+                // Remove oldest
+                user.fcmTokens.sort((a, b) => new Date(a.lastActive) - new Date(b.lastActive));
+                user.fcmTokens.shift();
+            }
+
             user.fcmTokens.push({
                 token,
                 device: device || 'Unknown',
