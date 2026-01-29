@@ -1,12 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./db');
 
+// Load env vars immediately
+dotenv.config();
+
+const connectDB = require('./db');
 const compression = require('compression');
 require('./config/firebase'); // Init Firebase Admin
-
-dotenv.config();
 
 const app = express();
 
