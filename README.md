@@ -16,6 +16,13 @@ This is a Human Resource Management System (HRMS) built with the MERN stack (Mon
 
 ## Getting Started
 
+### Clone the Repository
+
+```bash
+git clone https://github.com/chaitanyakreddysomu/Mern-Projects.git
+cd Mern-Projects
+```
+
 ### Prerequisites
 
 -   Node.js installed
