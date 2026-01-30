@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/config/api";
 
 let isRefreshing = false;
 let failedRequestsQueue: { resolve: (token: string) => void; reject: (err: any) => void; }[] = [];
@@ -49,7 +50,7 @@ export const setupFetchInterceptor = () => {
                 }
 
                 // Call refresh endpoint
-                const refreshResponse = await originalFetch('/api/auth/refresh', {
+                const refreshResponse = await originalFetch(`${API_BASE_URL}/api/auth/refresh`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refreshToken })
