@@ -1,59 +1,62 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
-const webpush = require('web-push');
 
-// Configure VAPID
-webpush.setVapidDetails(
-    'mailto:hr@company.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+// Web Push removed in favor of FCM Admin SDK
 
-// Register FCM Token (Multi-device)
-// Register FCM Token (Multi-device)
+// Register FCM Token (Multi-device with Strict Device ID)
 exports.registerFCM = async (req, res) => {
     try {
-        const { token, device } = req.body;
+        const { token, device, deviceId } = req.body;
+        // Backward compatibility: If no deviceId from frontend, use a fallback
+        const targetDeviceId = deviceId || 'legacy-device-' + token.substring(0, 8);
         const userId = req.user.id;
 
         if (!token) return res.status(400).json({ message: "Token is required" });
 
-        // Add or Update token in array
         const user = await User.findOne({ id: userId });
         if (!user) return res.status(404).json({ message: "User not found" });
 
         if (!user.fcmTokens) user.fcmTokens = [];
 
-        // 1. Remove this token if it exists on ANY other user (Token Rotation/Reassignment)
-        // This is expensive but necessary if a user logs out and another logs in on same device
+        // 1. DEVICE ISOLATION: Remove this "targetDeviceId" from ALL OTHER users
+        if (targetDeviceId) {
+            await User.updateMany(
+                { "fcmTokens.deviceId": targetDeviceId, id: { $ne: userId } },
+                { $pull: { fcmTokens: { deviceId: targetDeviceId } } }
+            );
+        }
+
+        // 2. TOKEN CLEANUP: Also remove the specific token key from ALL OTHER users
         await User.updateMany(
             { "fcmTokens.token": token, id: { $ne: userId } },
             { $pull: { fcmTokens: { token: token } } }
         );
 
-        // 2. Check if token exists for CURRENT user
-        const existingIndex = user.fcmTokens.findIndex(t => t.token === token);
+        // 2b. LEGACY CLEANUP: Remove from single string field too
+        await User.updateMany(
+            { fcmToken: token, id: { $ne: userId } },
+            { $set: { fcmToken: null } }
+        );
 
-        if (existingIndex > -1) {
-            // Update timestamp
-            user.fcmTokens[existingIndex].lastActive = new Date();
-            // Update device name if provided
-            if (device) user.fcmTokens[existingIndex].device = device;
-        } else {
-            // Add new token
-            // Optional: Limit number of tokens per user (e.g., max 5) to prevent bloat
-            if (user.fcmTokens.length >= 5) {
-                // Remove oldest
-                user.fcmTokens.sort((a, b) => new Date(a.lastActive) - new Date(b.lastActive));
-                user.fcmTokens.shift();
-            }
+        // 3. REFRESH FETCH: Getting the user again or filtering in-memory
+        // Since we ran 'updateMany' against the DB, the 'user' variable we fetched at the start is now stale regarding fcmTokens.
+        // It basically contains the old list. 
+        // We will manually filter the old list to mimic the DB cleanup we just did.
+        user.fcmTokens = user.fcmTokens.filter(t => t.deviceId !== targetDeviceId && t.token !== token);
 
-            user.fcmTokens.push({
-                token,
-                device: device || 'Unknown',
-                lastActive: new Date()
-            });
+        // 4. LIMIT: Enforce max devices per user
+        if (user.fcmTokens.length >= 5) {
+            user.fcmTokens.sort((a, b) => new Date(a.lastActive) - new Date(b.lastActive));
+            user.fcmTokens.shift(); // Remove oldest
         }
+
+        // 5. ADD: Push the new clean entry
+        user.fcmTokens.push({
+            token,
+            device: device || 'Unknown',
+            deviceId: targetDeviceId, // Store the distinct ID
+            lastActive: new Date()
+        });
 
         await user.save();
         res.json({ message: "Device registered for notifications" });
@@ -67,13 +70,24 @@ exports.registerFCM = async (req, res) => {
 // Check FCM Status
 exports.checkFCMStatus = async (req, res) => {
     try {
-        const { token } = req.query;
-        if (!token) return res.status(400).json({ message: "Token required" });
+        const { token, deviceId } = req.query;
+
+        // Need at least one identifier
+        if (!token && !deviceId) return res.status(400).json({ message: "Token or Device ID required" });
 
         const user = await User.findOne({ id: req.user.id });
         if (!user) return res.status(404).json({ registered: false });
 
-        const exists = user.fcmTokens && user.fcmTokens.some(t => t.token === token);
+        // Check if ANY active token matches
+        let exists = false;
+        if (user.fcmTokens && user.fcmTokens.length > 0) {
+            if (deviceId) {
+                exists = user.fcmTokens.some(t => t.deviceId === deviceId);
+            } else {
+                exists = user.fcmTokens.some(t => t.token === token);
+            }
+        }
+
         res.json({ registered: exists });
     } catch (error) {
         console.error("Check FCM Status Error:", error);
@@ -92,8 +106,6 @@ exports.sendTestFCM = async (req, res) => {
         const tokens = [];
         if (user.fcmTokens && user.fcmTokens.length > 0) {
             user.fcmTokens.forEach(t => tokens.push(t.token));
-        } else if (user.fcmToken) {
-            tokens.push(user.fcmToken);
         }
 
         const uniqueTokens = [...new Set(tokens.filter(t => t && t.length > 0))];
@@ -111,6 +123,25 @@ exports.sendTestFCM = async (req, res) => {
                 },
                 tokens: uniqueTokens
             });
+
+            if (response.failureCount > 0) {
+                response.responses.forEach(async (resp, idx) => {
+                    if (!resp.success) {
+                        const error = resp.error;
+                        const badToken = uniqueTokens[idx];
+                        if (
+                            error.code === 'messaging/registration-token-not-registered' ||
+                            error.code === 'messaging/invalid-registration-token' ||
+                            error.code === 'messaging/third-party-auth-error'
+                        ) {
+                            await User.updateOne(
+                                { id: userId },
+                                { $pull: { fcmTokens: { token: badToken } } }
+                            );
+                        }
+                    }
+                });
+            }
 
             res.json({
                 message: `Sent test notification to ${uniqueTokens.length} devices.`,
@@ -147,27 +178,54 @@ exports.subscribe = async (req, res) => {
 };
 
 // Helper to send push
+// Helper to send push
 const sendPushToUser = async (userId, payload) => {
     try {
+        const admin = require('../config/firebase');
+        if (!admin || !admin.messaging) return;
+
+        let tokens = [];
+
         if (userId === 'ALL') {
-            // CAUTION: This might be heavy
             const users = await User.find({ status: 'Active' });
             for (const u of users) {
-                if (u.pushSubscriptions && u.pushSubscriptions.length > 0) {
-                    for (const sub of u.pushSubscriptions) {
-                        webpush.sendNotification(sub, JSON.stringify(payload)).catch(e => {
-                            console.error("Push Error (cleanup needed):", e);
-                            // TODO: Remove expired subscriptions
-                        });
-                    }
-                }
+                if (u.fcmTokens) u.fcmTokens.forEach(t => tokens.push(t.token));
             }
         } else {
             const user = await User.findOne({ id: userId });
-            if (user && user.pushSubscriptions) {
-                for (const sub of user.pushSubscriptions) {
-                    webpush.sendNotification(sub, JSON.stringify(payload)).catch(e => console.error("Push Error:", e));
-                }
+            if (user && user.fcmTokens) {
+                user.fcmTokens.forEach(t => tokens.push(t.token));
+            }
+        }
+
+        const uniqueTokens = [...new Set(tokens)];
+
+        if (uniqueTokens.length > 0) {
+            const response = await admin.messaging().sendEachForMulticast({
+                notification: {
+                    title: payload.title,
+                    body: payload.body
+                },
+                tokens: uniqueTokens
+            });
+
+            if (response.failureCount > 0) {
+                response.responses.forEach(async (resp, idx) => {
+                    if (!resp.success) {
+                        const error = resp.error;
+                        const badToken = uniqueTokens[idx];
+                        if (
+                            error.code === 'messaging/registration-token-not-registered' ||
+                            error.code === 'messaging/invalid-registration-token' ||
+                            error.code === 'messaging/third-party-auth-error'
+                        ) {
+                            await User.updateMany(
+                                { "fcmTokens.token": badToken },
+                                { $pull: { fcmTokens: { token: badToken } } }
+                            );
+                        }
+                    }
+                });
             }
         }
     } catch (e) {

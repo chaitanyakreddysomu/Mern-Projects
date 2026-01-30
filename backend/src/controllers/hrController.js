@@ -4,7 +4,6 @@ const Leave = require('../models/Leave');
 const Complaint = require('../models/Complaint');
 const Notification = require('../models/Notification'); // Added
 const Payslip = require('../models/Payslip');
-const webpush = require('web-push'); // Added if needed, but we use firebase too?
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
 

@@ -11,13 +11,13 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 //     appId: "YOUR_APP_ID"
 // };
 const firebaseConfig = {
-    apiKey: "AIzaSyBvMbCArQjY2BMeBZcD6RxErTHQhpXD8hg",
-    authDomain: "ics-hrms.firebaseapp.com",
-    projectId: "ics-hrms",
-    storageBucket: "ics-hrms.firebasestorage.app",
-    messagingSenderId: "33068107453",
-    appId: "1:33068107453:web:e000952d5e8e6b850d19d4",
-    measurementId: "G-75DHVRDNTS"
+  apiKey: "AIzaSyBvMbCArQjY2BMeBZcD6RxErTHQhpXD8hg",
+  authDomain: "ics-hrms.firebaseapp.com",
+  projectId: "ics-hrms",
+  storageBucket: "ics-hrms.firebasestorage.app",
+  messagingSenderId: "33068107453",
+  appId: "1:33068107453:web:ceda82a1f4411da90d19d4",
+  measurementId: "G-7XMRVEXHFH"
 };
 
 // Initialize Firebase
@@ -37,9 +37,7 @@ export const requestFCMToken = async (): Promise<string | null> => {
             return null;
         }
 
-        const token = await getToken(messaging, {
-            vapidKey: import.meta.env.VITE_VAPID_PUBLIC_KEY
-        });
+        const token = await getToken(messaging);
 
         if (!token) {
             console.warn("No registration token available. Request permission to generate one.");

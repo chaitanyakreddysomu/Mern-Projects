@@ -9,18 +9,8 @@ const Notification = require('../models/Notification');
 const Payslip = require('../models/Payslip');
 const Complaint = require('../models/Complaint');
 const SalaryStructure = require('../models/SalaryStructure');
-const webpush = require('web-push');
 const logger = require('../utils/logger');
 const bcrypt = require('bcryptjs');
-
-// Configure Web Push (Ensure keys are loaded)
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-        'mailto:hr@company.com',
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-    );
-}
 
 exports.getAdminDashboardStats = async (req, res) => {
     try {

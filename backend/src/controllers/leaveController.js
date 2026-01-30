@@ -135,9 +135,7 @@ exports.updateLeaveStatus = async (req, res) => {
                     if (user.fcmTokens && user.fcmTokens.length > 0) {
                         user.fcmTokens.forEach(t => { if (t.token) tokens.push(t.token) });
                     }
-                    if (tokens.length === 0 && user.fcmToken) {
-                        tokens.push(user.fcmToken);
-                    }
+
                     const uniqueTokens = [...new Set(tokens.filter(t => t && t.length > 0))];
 
                     if (uniqueTokens.length > 0) {
@@ -149,9 +147,27 @@ exports.updateLeaveStatus = async (req, res) => {
                             });
                             console.log(`[LeaveController] FCM Sent: ${response.successCount} success, ${response.failureCount} failure`);
                             if (response.failureCount > 0) {
-                                response.responses.forEach((resp, idx) => {
+                                response.responses.forEach(async (resp, idx) => {
                                     if (!resp.success) {
-                                        console.error(`[LeaveController] Failure for token index ${idx}:`, resp.error);
+                                        const error = resp.error;
+                                        const badToken = uniqueTokens[idx];
+                                        console.error(`[LeaveController] Failure for token index ${idx}:`, error);
+
+                                        if (
+                                            error.code === 'messaging/registration-token-not-registered' ||
+                                            error.code === 'messaging/invalid-registration-token' ||
+                                            error.code === 'messaging/third-party-auth-error'
+                                        ) {
+                                            console.log(`[LeaveController] Removing bad token: ${badToken}`);
+                                            try {
+                                                await User.updateOne(
+                                                    { id: leave.userId },
+                                                    { $pull: { fcmTokens: { token: badToken } } }
+                                                );
+                                            } catch (dbErr) {
+                                                console.error("[LeaveController] Failed to remove bad token:", dbErr);
+                                            }
+                                        }
                                     }
                                 });
                             }

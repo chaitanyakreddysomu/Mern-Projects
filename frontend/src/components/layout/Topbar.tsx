@@ -8,6 +8,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn, getDeviceId } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -21,69 +22,50 @@ export function Topbar() {
     const [unreadCount, setUnreadCount] = useState(0);
 
     // Initialize Firebase Cloud Messaging
-    useEffect(() => {
-        // Request Permission & Save Token
-        const initFCM = async () => {
-            // Only run if user is logged in
-            if (user) {
-                try {
-                    const { requestFCMToken, onMessageListener } = await import('@/firebase');
+    const initFCM = async () => {
+        if (user) {
+            try {
+                const { requestFCMToken, onMessageListener } = await import('@/firebase');
 
-                    // Get token and sync with backend
-                    const token = await requestFCMToken();
+                // Get token and sync with backend
+                const token = await requestFCMToken();
 
-                    if (token) {
-                        const authToken = localStorage.getItem('token');
+                if (token) {
+                    // We successfully initialized Firebase Messaging
+                    // We do NOT auto-register here. Registration is manual via "Enable Push".
+                    console.log("FCM Initialized (Listener Active)");
+                }
 
-                        // Determine Device Name
-                        let deviceName = "Unknown Device";
-                        if (navigator.userAgent.indexOf("Win") != -1) deviceName = "Windows PC";
-                        else if (navigator.userAgent.indexOf("Mac") != -1) deviceName = "Mac";
-                        else if (navigator.userAgent.indexOf("Linux") != -1) deviceName = "Linux";
-                        else if (navigator.userAgent.indexOf("Android") != -1) deviceName = "Android";
-                        else if (navigator.userAgent.indexOf("like Mac") != -1) deviceName = "iOS";
+                // Listen for foreground messages
+                onMessageListener().then((payload: any) => {
+                    console.log('Foreground Message:', payload);
+                    const { title, body } = payload.notification;
+                    // 1. Show In-App Toast
+                    addToast(`${title}: ${body}`, "info");
 
-                        if (navigator.userAgent.indexOf("Chrome") != -1) deviceName += " (Chrome)";
-                        else if (navigator.userAgent.indexOf("Firefox") != -1) deviceName += " (Firefox)";
-                        else if (navigator.userAgent.indexOf("Safari") != -1) deviceName += " (Safari)";
-
-                        await apiFetch('/api/notifications/register-fcm', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${authToken}`
-                            },
-                            body: JSON.stringify({ token, device: deviceName })
-                        }).then(res => {
-                            if (res.ok) console.log("FCM Device Registered");
-                        }).catch(e => console.error("FCM Registration Error:", e));
+                    // 2. Show Browser Notification (even if app is open)
+                    if (Notification.permission === "granted") {
+                        new Notification(title, {
+                            body: body,
+                            icon: "/vite.svg"
+                        });
                     }
 
-                    // Listen for foreground messages
-                    onMessageListener().then((payload: any) => {
-                        console.log('Foreground Message:', payload);
-                        const { title, body } = payload.notification;
-                        // 1. Show In-App Toast
-                        addToast(`${title}: ${body}`, "info");
+                    // We can also trigger refresh of notification list here
+                    fetchNotifications();
+                });
 
-                        // 2. Show Browser Notification (even if app is open)
-                        if (Notification.permission === "granted") {
-                            new Notification(title, {
-                                body: body,
-                                icon: "/vite.svg"
-                            });
-                        }
-
-                        // We can also trigger refresh of notification list here
-                        fetchNotifications();
-                    });
-
-                } catch (err) {
-                    console.log("FCM Init Error (likely config missing):", err);
-                }
+            } catch (err) {
+                console.log("FCM Init Error (likely config missing):", err);
             }
-        };
+        }
+    };
 
-        initFCM();
+    useEffect(() => {
+        // Only auto-init if permission is ALREADY granted
+        if (user && Notification.permission === "granted") {
+            initFCM();
+        }
     }, [user]);
 
     const requestPermission = () => {
@@ -91,10 +73,12 @@ export function Topbar() {
             addToast("This browser does not support desktop notification", "error");
         } else if (Notification.permission === "granted") {
             addToast("Notifications are already enabled!", "success");
+            initFCM(); // Re-sync if needed
         } else if (Notification.permission !== "denied") {
             Notification.requestPermission().then((permission) => {
                 if (permission === "granted") {
                     addToast("Notifications enabled!", "success");
+                    initFCM(); // Initialize now that we have permission
                 }
             });
         }
@@ -196,7 +180,9 @@ export function Topbar() {
                         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-sky-600 hover:bg-sky-50">
                             <Bell className="h-5 w-5" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse" />
+                                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white animate-in zoom-in">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
                             )}
                         </Button>
                     </PopoverTrigger>
@@ -206,37 +192,39 @@ export function Topbar() {
                             {unreadCount > 0 && <span className="text-xs text-sky-600 font-medium">{unreadCount} New</span>}
                         </div>
                         <div className="max-h-[300px] overflow-y-auto">
-                            {notifications.length === 0 ? (
+                            {unreadCount === 0 ? (
                                 <div className="p-8 text-center text-muted-foreground text-sm">
-                                    No notifications
+                                    No new notifications
                                 </div>
                             ) : (
                                 <div className="divide-y relative">
-                                    {notifications.slice(0, 5).map((notif: any) => (
-                                        <div
-                                            key={notif._id || notif.id}
-                                            className={`p-3 hover:bg-slate-50 cursor-pointer transition-colors ${!notif.read ? 'bg-sky-50/30' : ''}`}
-                                            onClick={() => handleNotificationClick(notif._id || notif.id)}
-                                        >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${notif.type === 'alert' ? 'bg-red-100 text-red-700' :
-                                                    notif.type === 'success' ? 'bg-green-100 text-green-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                    {notif.source || 'System'}
-                                                </span>
-                                                <span className="text-[10px] text-muted-foreground">
-                                                    {notif.date && formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
-                                                </span>
+                                    {notifications
+                                        .filter((n: any) => !n.read)
+                                        .map((notif: any) => (
+                                            <div
+                                                key={notif._id || notif.id}
+                                                className={`p-3 hover:bg-slate-50 cursor-pointer transition-colors bg-sky-50/30`}
+                                                onClick={() => handleNotificationClick(notif._id || notif.id)}
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${notif.type === 'alert' ? 'bg-red-100 text-red-700' :
+                                                        notif.type === 'success' ? 'bg-green-100 text-green-700' :
+                                                            'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                        {notif.source || 'System'}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        {notif.date && formatDistanceToNow(new Date(notif.date), { addSuffix: true })}
+                                                    </span>
+                                                </div>
+                                                <p className={`text-sm mb-1 line-clamp-2 ${!notif.read ? 'font-medium text-slate-800' : 'text-slate-600'}`}>
+                                                    {notif.title}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                                    {notif.message}
+                                                </p>
                                             </div>
-                                            <p className={`text-sm mb-1 line-clamp-2 ${!notif.read ? 'font-medium text-slate-800' : 'text-slate-600'}`}>
-                                                {notif.title}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground line-clamp-1">
-                                                {notif.message}
-                                            </p>
-                                        </div>
-                                    ))}
+                                        ))}
                                 </div>
                             )}
                         </div>

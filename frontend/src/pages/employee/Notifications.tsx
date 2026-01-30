@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Info, CheckCircle2, AlertTriangle, BellRing, Check } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn, getDeviceId } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
@@ -58,8 +58,9 @@ export default function Notifications() {
             const token = await requestFCMToken(); // Get strict current token
             if (token) {
                 const authToken = localStorage.getItem('token');
+                const deviceId = getDeviceId();
                 try {
-                    const res = await apiFetch(`/api/notifications/check-fcm-status?token=${encodeURIComponent(token)}`, {
+                    const res = await apiFetch(`/api/notifications/check-fcm-status?token=${encodeURIComponent(token)}&deviceId=${deviceId}`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     if (res.ok) {
@@ -117,12 +118,14 @@ export default function Notifications() {
                     else if (navigator.userAgent.indexOf("Firefox") != -1) deviceName += " (Firefox)";
                     else if (navigator.userAgent.indexOf("Safari") != -1) deviceName += " (Safari)";
 
+                    const deviceId = getDeviceId();
+
                     await apiFetch('/api/notifications/register-fcm', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${authToken}`
                         },
-                        body: JSON.stringify({ token, device: deviceName })
+                        body: JSON.stringify({ token, device: deviceName, deviceId })
                     });
 
                     localStorage.setItem('fcm_registered', 'true');

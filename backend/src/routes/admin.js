@@ -78,6 +78,9 @@ router.put('/leaves/:id', auth, async (req, res) => {
                 }
 
                 if (notifTitle) {
+                    // Log intention
+                    console.log(`[AdminLeaveNotification] Status Update: ${status} for User: ${user.id}`);
+
                     // Create Notification
                     await Notification.create({
                         title: notifTitle,
@@ -91,10 +94,12 @@ router.put('/leaves/:id', auth, async (req, res) => {
                     // Send FCM
                     const tokens = [];
                     if (user.fcmTokens && user.fcmTokens.length > 0) {
-                        user.fcmTokens.forEach(t => tokens.push(t.token));
-                    } else if (user.fcmToken) {
-                        tokens.push(user.fcmToken);
+                        user.fcmTokens.forEach(t => {
+                            if (t.token) tokens.push(t.token);
+                        });
                     }
+                    // REMOVED LEGACY fcmToken fallback
+
                     const uniqueTokens = [...new Set(tokens.filter(t => t))];
 
                     if (uniqueTokens.length > 0) {
@@ -107,13 +112,28 @@ router.put('/leaves/:id', auth, async (req, res) => {
                             console.log(`[AdminLeaveNotification] Sent to ${user.id}: ${response.successCount} success, ${response.failureCount} failure`);
 
                             if (response.failureCount > 0) {
-                                response.responses.forEach((resp, idx) => {
+                                response.responses.forEach(async (resp, idx) => {
                                     if (!resp.success) {
-                                        console.error(`[AdminLeaveNotification] Failure for token index ${idx}:`, JSON.stringify(resp.error, null, 2));
+                                        const error = resp.error;
+                                        const badToken = uniqueTokens[idx];
+                                        console.error(`[AdminLeaveNotification] Failure for token index ${idx} (${badToken ? badToken.substring(0, 10) + '...' : 'unknown'}):`, error);
+
+                                        if (
+                                            error.code === 'messaging/registration-token-not-registered' ||
+                                            error.code === 'messaging/invalid-registration-token' ||
+                                            error.code === 'messaging/third-party-auth-error'
+                                        ) {
+                                            await User.updateOne(
+                                                { id: leave.userId },
+                                                { $pull: { fcmTokens: { token: badToken } } }
+                                            );
+                                        }
                                     }
                                 });
                             }
                         }
+                    } else {
+                        console.log(`[AdminLeaveNotification] No FCM tokens found for user ${user.id}. Skipping push.`);
                     }
                 }
             }

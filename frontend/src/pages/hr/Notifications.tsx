@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/config/api";
+import { useToast } from "@/context/ToastContext";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BellRing, CheckCircle2, AlertTriangle, Info, PlusCircle, Send, Check, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getDeviceId } from "@/lib/utils";
 import {
     Dialog,
     DialogContent,
@@ -37,6 +38,44 @@ export default function HRNotifications() {
     const [selectedMyNotification, setSelectedMyNotification] = useState<any | null>(null);
     const [myLoading, setMyLoading] = useState(false);
     const [myFilter, setMyFilter] = useState<'all' | 'unread'>('all');
+    const { addToast } = useToast();
+
+    // --- PUSH NOTIFICATIONS ---
+    const requestPermission = async () => {
+        if (!("Notification" in window)) {
+            addToast("This browser does not support desktop notification", "error");
+            return;
+        }
+
+        if (Notification.permission === "granted") {
+            addToast("Notifications are already enabled!", "success");
+            return;
+        }
+
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                addToast("Notifications enabled!", "success");
+                const { requestFCMToken } = await import('@/firebase');
+                const token = await requestFCMToken();
+                if (token) {
+                    const authToken = localStorage.getItem('token');
+                    let deviceName = "Web Browser";
+                    if (navigator.userAgent.indexOf("Chrome") != -1) deviceName = "Chrome";
+
+                    const deviceId = getDeviceId();
+
+                    await apiFetch('/api/notifications/register-fcm', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: JSON.stringify({ token, device: deviceName, deviceId })
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Permission request failed", error);
+        }
+    };
 
     // --- FETCH DATA ---
 
@@ -414,31 +453,42 @@ export default function HRNotifications() {
                             <h2 className="text-xl font-bold">My Inbox</h2>
                             <p className="text-muted-foreground text-sm">Notifications received from System or Admin.</p>
                         </div>
-                        <div className="relative flex items-center bg-slate-100 p-1 rounded-lg w-[180px] h-9">
-                            <div
-                                className={cn(
-                                    "absolute inset-y-1 w-[calc(50%-4px)] bg-amber-500 rounded-md shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-                                    myFilter === 'all' ? "left-1" : "left-[calc(50%)]"
-                                )}
-                            />
-                            <button
-                                onClick={() => setMyFilter('all')}
-                                className={cn(
-                                    "flex-1 relative z-10 text-sm font-medium transition-colors duration-200 text-center",
-                                    myFilter === 'all' ? "text-white" : "text-slate-500 hover:text-slate-700"
-                                )}
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={requestPermission}
+                                className="h-9 text-xs font-medium text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100 hover:text-amber-800"
                             >
-                                All
-                            </button>
-                            <button
-                                onClick={() => setMyFilter('unread')}
-                                className={cn(
-                                    "flex-1 relative z-10 text-sm font-medium transition-colors duration-200 text-center",
-                                    myFilter === 'unread' ? "text-white" : "text-slate-500 hover:text-slate-700"
-                                )}
-                            >
-                                Unread
-                            </button>
+                                <BellRing className="w-3.5 h-3.5 mr-2" />
+                                Enable Push
+                            </Button>
+                            <div className="relative flex items-center bg-slate-100 p-1 rounded-lg w-[180px] h-9">
+                                <div
+                                    className={cn(
+                                        "absolute inset-y-1 w-[calc(50%-4px)] bg-amber-500 rounded-md shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                                        myFilter === 'all' ? "left-1" : "left-[calc(50%)]"
+                                    )}
+                                />
+                                <button
+                                    onClick={() => setMyFilter('all')}
+                                    className={cn(
+                                        "flex-1 relative z-10 text-sm font-medium transition-colors duration-200 text-center",
+                                        myFilter === 'all' ? "text-white" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    onClick={() => setMyFilter('unread')}
+                                    className={cn(
+                                        "flex-1 relative z-10 text-sm font-medium transition-colors duration-200 text-center",
+                                        myFilter === 'unread' ? "text-white" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    Unread
+                                </button>
+                            </div>
                         </div>
                     </div>
 

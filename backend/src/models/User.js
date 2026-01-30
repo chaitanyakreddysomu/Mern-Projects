@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema({
     fcmTokens: [{
         token: { type: String },
         device: { type: String },
+        deviceId: { type: String }, // Unique ID for browser/device instance
         lastActive: { type: Date, default: Date.now }
     }],
     profileImage: { type: String }, // URL from Supabase
