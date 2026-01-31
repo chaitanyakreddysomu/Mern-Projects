@@ -56,6 +56,20 @@ The backend handles the API, database connections, file storage via Supabase, an
         npm start
         ```
 
+### Creating an Admin User
+
+To create a new admin user via the command line, navigate to the `backend` directory and run:
+
+```bash
+cd backend
+npm run add-admin -- <email> <password> "<name>"
+```
+
+Example:
+```bash
+npm run add-admin -- admin@ics.com admin123 "System Admin"
+```
+
 ### Frontend
 
 The frontend is a React application powered by Vite.

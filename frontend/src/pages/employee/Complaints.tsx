@@ -168,35 +168,61 @@ export default function Complaints() {
                     </Card>
                 ) : (
                     complaints.map(complaint => {
-                        const isResolved = complaint.status === "Resolved";
+                        const status = complaint.status;
+
+                        // Define styles based on status
+                        let statusStyles = {
+                            card: "bg-red-50/50 border-l-red-500 shadow-red-500/10 hover:shadow-red-500/20",
+                            text: "text-red-700",
+                            bg: "bg-red-100/50 text-red-800",
+                            badge: "bg-red-600 hover:bg-red-700",
+                            icon: <AlertCircle className="h-5 w-5" />
+                        };
+
+                        if (status === "Investigating") {
+                            statusStyles = {
+                                card: "bg-orange-50/50 border-l-orange-500 shadow-orange-500/10 hover:shadow-orange-500/20",
+                                text: "text-orange-700",
+                                bg: "bg-orange-100/50 text-orange-800",
+                                badge: "bg-orange-600 hover:bg-orange-700",
+                                icon: <Clock className="h-5 w-5" />
+                            };
+                        } else if (status === "Resolved") {
+                            statusStyles = {
+                                card: "bg-green-50/50 border-l-green-500 shadow-green-500/10 hover:shadow-green-500/20",
+                                text: "text-green-700",
+                                bg: "bg-green-100/50 text-green-800",
+                                badge: "bg-green-600 hover:bg-green-700",
+                                icon: <CheckCircle className="h-5 w-5" />
+                            };
+                        }
+
                         return (
                             <Card
+                                key={complaint._id || complaint.id}
                                 className={cn(
-                                    "group hover:-translate-y-1 transition-all duration-300 border-l-4",
-                                    isResolved
-                                        ? "bg-green-50/50 border-l-green-500 shadow-lg shadow-green-500/10 hover:shadow-green-500/20"
-                                        : "bg-red-50/50 border-l-red-500 shadow-lg shadow-red-500/10 hover:shadow-red-500/20"
+                                    "group hover:-translate-y-1 transition-all duration-300 border-l-4 shadow-lg",
+                                    statusStyles.card
                                 )}
-
                             >
                                 <CardHeader className="pb-3 md:flex-row md:items-start md:justify-between gap-4">
                                     <div className="space-y-3 flex-1">
                                         <CardTitle className={cn(
                                             "text-lg font-bold flex items-center gap-2",
-                                            isResolved ? "text-green-700" : "text-red-700"
+                                            statusStyles.text
                                         )}>
-                                            {isResolved ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                                            {statusStyles.icon}
                                             {complaint.subject}
                                         </CardTitle>
 
                                         <div className={cn(
                                             "p-3 rounded-md text-sm font-medium",
-                                            isResolved ? "bg-green-100/50 text-green-800" : "bg-red-100/50 text-red-800"
+                                            statusStyles.bg
                                         )}>
                                             <p className="leading-relaxed mb-2 max-h-20 overflow-y-auto whitespace-pre-wrap scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-200">{complaint.description}</p>
                                             <div className={cn(
-                                                "flex items-center gap-2 text-xs",
-                                                isResolved ? "text-green-600" : "text-red-600"
+                                                "flex items-center gap-2 text-xs opacity-80",
+                                                statusStyles.text
                                             )}>
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="h-3 w-3" />
@@ -205,13 +231,10 @@ export default function Complaints() {
                                             </div>
                                         </div>
                                     </div>
-                                    <Badge variant={
-                                        isResolved ? "success" : "destructive" // Simplified for this view since card color tells status
-                                    } className="uppercase text-[10px] tracking-wider px-2 py-0.5 h-6 shrink-0">
+                                    <Badge className={cn("uppercase text-[10px] tracking-wider px-2 py-0.5 h-6 shrink-0", statusStyles.badge)}>
                                         {complaint.status}
                                     </Badge>
                                 </CardHeader>
-                                {/* Removed CardContent since description is moved up */}
                             </Card>
                         );
                     })

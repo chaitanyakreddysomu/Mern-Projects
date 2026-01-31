@@ -273,7 +273,7 @@ export function Topbar() {
                         <p className="text-sm font-medium leading-none text-[#2563EB]">{user.projectStatus}</p>
                     </div>
                     <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 hover:ring-sky-100 transition-all">
-                        <AvatarImage src={user.profileImage || `https://ui-avatars.com/api/?name=${user.name}&background=2563EB&color=fff`} alt={user.name} />
+                        <AvatarImage className="object-cover" src={user.profileImage || `https://ui-avatars.com/api/?name=${user.name}&background=2563EB&color=fff`} alt={user.name} />
                         <AvatarFallback className="bg-sky-100 text-sky-700">{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                 </div>

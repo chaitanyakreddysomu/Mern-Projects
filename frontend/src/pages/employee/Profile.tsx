@@ -246,7 +246,7 @@ export default function Profile() {
                         <div className="relative group shrink-0">
                             <div className="h-24 w-24 rounded-full border-2 border-orange-500 shadow-2xl shadow-blue-100 p-1 bg-white overflow-hidden group-hover:scale-105 transition-transform duration-300 relative">
                                 <Avatar className="h-full w-full">
-                                    <AvatarImage src={previewImage || (formData.profileImage ? `${formData.profileImage}?t=${imageTimestamp}` : undefined) || `https://ui-avatars.com/api/?name=${formData.name}&background=ff4500&color=fff`} alt={formData.name} />
+                                    <AvatarImage className="object-cover" src={previewImage || (formData.profileImage ? `${formData.profileImage}?t=${imageTimestamp}` : undefined) || `https://ui-avatars.com/api/?name=${formData.name}&background=ff4500&color=fff`} alt={formData.name} />
                                     <AvatarFallback className="text-2xl bg-muted">{formData.name ? formData.name.charAt(0) : 'U'}</AvatarFallback>
                                 </Avatar>
                                 {isEditing && (

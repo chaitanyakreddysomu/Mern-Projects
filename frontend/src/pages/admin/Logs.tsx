@@ -244,13 +244,13 @@ export default function AdminLogs() {
                                     <TableHead className="font-semibold text-slate-700">Action</TableHead>
                                     <TableHead className="font-semibold text-slate-700">Description</TableHead>
                                     <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                                    <TableHead className="font-semibold text-slate-700 text-right pr-6">IP Address</TableHead>
+
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="h-24 text-center">
+                                        <TableCell colSpan={7} className="h-24 text-center">
                                             <div className="flex justify-center items-center gap-2 text-muted-foreground">
                                                 <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
                                                 Loading logs...
@@ -259,7 +259,7 @@ export default function AdminLogs() {
                                     </TableRow>
                                 ) : filteredLogs.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                                             No logs found matching your criteria.
                                         </TableCell>
                                     </TableRow>
@@ -306,9 +306,7 @@ export default function AdminLogs() {
                                                         {log.severity}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-right pr-6 font-mono text-xs text-slate-500">
-                                                    {log.ipAddress}
-                                                </TableCell>
+
                                             </TableRow>
                                         );
                                     })

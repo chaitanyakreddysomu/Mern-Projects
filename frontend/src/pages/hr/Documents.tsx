@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { apiFetch } from "@/config/api";
+import API_BASE_URL, { apiFetch } from "@/config/api";
 import {
     Card,
     CardContent,
@@ -100,6 +100,7 @@ export default function HRDocuments() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const fetchDocuments = async () => {
         setLoading(true);
@@ -129,10 +130,18 @@ export default function HRDocuments() {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0 || !uploadingDocId) return;
 
         const file = e.target.files[0];
+
+        // 1️⃣ Validate file size (before upload)
+        const MAX_SIZE_MB = 10;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            addToast("File size must be less than 10MB", "error");
+            return;
+        }
+
         const formData = new FormData();
         formData.append('document', file);
         formData.append('docId', uploadingDocId);
@@ -145,16 +154,42 @@ export default function HRDocuments() {
         formData.append('category', activeTab);
 
         setIsUploading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await apiFetch('/api/hr/documents/upload', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
+        setUploadProgress(0);
 
-            if (res.ok) {
-                const data = await res.json();
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE_URL}/api/hr/documents/upload`, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
+
+        let lastRenderedProgress = 0;
+        let realProgress = 0;
+
+        xhr.upload.onloadstart = () => {
+            setUploadProgress(0);
+        };
+
+        xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) return;
+
+            realProgress = Math.round((event.loaded / event.total) * 100);
+
+            // Smooth rendering without faking upload
+            const smoothUpdate = () => {
+                if (lastRenderedProgress < realProgress) {
+                    lastRenderedProgress += 1;
+                    setUploadProgress(lastRenderedProgress);
+                    requestAnimationFrame(smoothUpdate);
+                }
+            };
+
+            smoothUpdate();
+        };
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                // Ensure perfect 100%
+                setUploadProgress(100);
+
+                const data = JSON.parse(xhr.responseText);
                 addToast("Document uploaded successfully", "success");
                 setUserDocs(prev => {
                     const existingIdx = prev.findIndex(d => d.docId === uploadingDocId);
@@ -166,16 +201,30 @@ export default function HRDocuments() {
                     return [...prev, data.document];
                 });
             } else {
-                const err = await res.json();
-                addToast(err.message || "Upload failed", "error");
+                try {
+                    const err = JSON.parse(xhr.responseText);
+                    addToast(err.message || "Upload failed", "error");
+                } catch (e) {
+                    addToast("Upload failed", "error");
+                }
             }
-        } catch (error) {
-            console.error("Upload error", error);
+
+            setTimeout(() => {
+                setIsUploading(false);
+                setUploadingDocId(null);
+                setUploadProgress(0);
+            }, 300);
+        };
+
+        xhr.onerror = () => {
+            console.error("Upload error");
             addToast("Upload failed", "error");
-        } finally {
             setIsUploading(false);
             setUploadingDocId(null);
-        }
+            setUploadProgress(0);
+        };
+
+        xhr.send(formData);
     };
 
     const handlePreview = async (path: string) => {
@@ -257,6 +306,7 @@ export default function HRDocuments() {
                                 onUpload={() => handleUploadClick(doc.id)}
                                 onPreview={handlePreview}
                                 isUploading={isUploading && uploadingDocId === doc.id}
+                                uploadProgress={uploadProgress}
                             />
                         );
                     })}
@@ -274,13 +324,15 @@ function DocumentCard({
     userDoc,
     onUpload,
     onPreview,
-    isUploading
+    isUploading,
+    uploadProgress
 }: {
     doc: DocItem;
     userDoc: any;
     onUpload: () => void;
     onPreview: (path: string) => void;
     isUploading: boolean;
+    uploadProgress: number;
 }) {
     const ui = DOC_UI[doc.id] ?? {
         icon: FileText,
@@ -359,9 +411,19 @@ function DocumentCard({
                                 variant="outline"
                                 className="bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all shadow-sm hover:shadow"
                                 onClick={onUpload}
+                                disabled={isUploading}
                             >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Update
+                                {isUploading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Updating {uploadProgress}%
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Update
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -379,7 +441,7 @@ function DocumentCard({
                                 <Upload className="h-5 w-5" />
                             </div>
                         )}
-                        <p className="text-sm font-medium">{isUploading ? "Uploading..." : "Click to upload"}</p>
+                        <p className="text-sm font-medium">{isUploading ? `Uploading ${uploadProgress}%` : "Click to upload"}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                             PDF, Images (Max 10MB)
                         </p>
