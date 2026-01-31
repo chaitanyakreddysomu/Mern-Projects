@@ -340,7 +340,7 @@ exports.createPayslip = async (req, res) => {
 
 exports.getAdminPayslips = async (req, res) => {
     try {
-        const { month, year, status, search } = req.query;
+        const { month, year, status, search, page = 1, limit = 10 } = req.query;
         let query = {};
 
         if (month && month !== 'All') query.month = month;
@@ -354,7 +354,25 @@ exports.getAdminPayslips = async (req, res) => {
             ];
         }
 
-        const payslips = await Payslip.find(query).sort({ generatedOn: -1 }).lean();
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
+
+        const payslips = await Payslip.find(query)
+            .sort({ generatedOn: -1 })
+            .skip(skip)
+            .limit(limitNum)
+            .lean();
+
+        const total = await Payslip.countDocuments(query);
+
+        // Calculate Stats (Global - All Time, ignoring params)
+        const stats = {
+            total: await Payslip.countDocuments({}),
+            draft: await Payslip.countDocuments({ status: 'Draft' }),
+            created: await Payslip.countDocuments({ status: 'Created' }),
+            paid: await Payslip.countDocuments({ status: 'Paid' })
+        };
 
         const userIds = [...new Set(payslips.map(p => p.empId))];
         const users = await User.find({ id: { $in: userIds } }).select('id profileImage avatar');
@@ -367,7 +385,19 @@ exports.getAdminPayslips = async (req, res) => {
             avatar: userMap[p.empId]?.avatar
         }));
 
-        res.json(enrichedPayslips);
+        res.json({
+            payslips: enrichedPayslips,
+            pagination: {
+                total,
+                page: pageNum,
+                limit: limitNum,
+                pages: Math.ceil(total / limitNum),
+                drafts: stats.draft,
+                created: stats.created,
+                paid: stats.paid, // stats.paid
+                totalAll: stats.total // stats.total
+            }
+        });
     } catch (error) {
         console.error("Get Payslips Error:", error);
         res.status(500).json({ message: "Server Error" });
@@ -525,11 +555,21 @@ exports.calculatePayslipStats = async (req, res) => {
 
 exports.getAllEmployees = async (req, res) => {
     try {
-        const { role, status, projectStatus } = req.query;
+        const { role, status, projectStatus, search } = req.query;
         let query = {};
 
         // 1. Mandatory Filter: REMOVED to allow all statuses (including Rejected/Pending if needed)
         // query.status = { $in: ['Active', 'Inactive'] };
+
+        // Search Filter
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { id: { $regex: search, $options: 'i' } },
+                { department: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         // 2. Filter by Role
         if (role && role !== 'All' && role !== 'ALL') {
@@ -544,17 +584,49 @@ exports.getAllEmployees = async (req, res) => {
         // 3. Filter by Status
         if (status && status !== 'All' && status !== 'ALL') {
             query.status = { $regex: new RegExp(`^${status}$`, 'i') };
+        } else if (!status) {
+            // Default to Active ONLY if no status is explicitly provided
+            query.status = 'Active';
         }
+        // If status is 'All', do not set query.status, effectively fetching all records
 
         // 4. Filter by Project Status
         if (projectStatus && projectStatus !== 'All' && projectStatus !== 'ALL') {
             query.projectStatus = { $regex: new RegExp(`^${projectStatus}$`, 'i') };
         }
 
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+
+        const total = await User.countDocuments(query);
         const employees = await User.find(query)
             .select('-password -documents -pushSubscriptions -fcmTokens -__v')
+            .skip(skip)
+            .limit(limit)
             .lean();
-        res.json(employees);
+
+        // Calculate global stats (independent of filters)
+        const activeStaff = await User.countDocuments({ status: "Active" });
+        const onBench = await User.countDocuments({ status: "Active", role: "EMPLOYEE", projectStatus: "Bench" });
+        const activeHR = await User.countDocuments({ status: "Active", role: "HR" });
+        const activeAdmin = await User.countDocuments({ status: "Active", role: "ADMIN" });
+
+        res.json({
+            employees,
+            pagination: {
+                total,
+                page,
+                pages: Math.ceil(total / limit),
+                limit,
+                stats: {
+                    activeStaff,
+                    onBench,
+                    activeHR,
+                    activeAdmin
+                }
+            }
+        });
     } catch (error) {
         console.error("Get All Employees Error:", error);
         res.status(500).json({ message: "Server Error" });
@@ -924,6 +996,7 @@ exports.getAttendanceRecords = async (req, res) => {
             records.sort((a, b) => {
                 let valA = a[sortBy] || '';
                 let valB = b[sortBy] || '';
+
                 if (typeof valA === 'string') valA = valA.toLowerCase();
                 if (typeof valB === 'string') valB = valB.toLowerCase();
 
@@ -943,7 +1016,7 @@ exports.getAttendanceRecords = async (req, res) => {
 
 exports.getLeaveRequests = async (req, res) => {
     try {
-        const { status, search, sortBy, order } = req.query;
+        const { status, type, search, sortBy, order, page = 1, limit = 10 } = req.query;
         let query = {};
 
         // 1. Role Filter: Admin sees 'HR' and 'EMPLOYEE' leaves (Exclude Admin leaves)
@@ -959,6 +1032,11 @@ exports.getLeaveRequests = async (req, res) => {
             query.status = { $in: statusArray };
         }
 
+        // Type Filter
+        if (type && type.toLowerCase() !== 'all') {
+            query.type = { $regex: new RegExp(type, 'i') };
+        }
+
         // Search Filter
         if (search) {
             query.$or = [
@@ -967,11 +1045,30 @@ exports.getLeaveRequests = async (req, res) => {
             ];
         }
 
-        // Fetch Leaves
-        let leaves = await Leave.find(query).lean();
+        // Pagination & Sorting calculations
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
-        // Enrich with Profile Image
-        const userIds = [...new Set(leaves.map(l => l.userId))]; // specific userIds
+        let sort = {};
+        if (sortBy) {
+            sort[sortBy] = order === 'desc' ? -1 : 1;
+        } else {
+            sort.appliedOn = -1; // Default
+        }
+
+        // Fetch Paginated Leaves
+        let leaves = await Leave.find(query)
+            .sort(sort)
+            .skip(skip)
+            .limit(limitNum)
+            .lean();
+
+        // Total count for pagination match
+        const totalRecords = await Leave.countDocuments(query);
+
+        // Enrich with Profile Image (Only for paged results)
+        const userIds = [...new Set(leaves.map(l => l.userId))];
         const users = await User.find({ id: { $in: userIds } }).select('id profileImage avatar').lean();
         const userMap = {};
         users.forEach(u => userMap[u.id] = u);
@@ -982,39 +1079,32 @@ exports.getLeaveRequests = async (req, res) => {
             avatar: userMap[leave.userId]?.avatar
         }));
 
-        // Stats Calculation (Filtered by Role)
+        // Stats Calculation (Global - Filtered by Role but NOT by Search/Status if usually stats are fixed header? 
+        // Actually stats usually reflect "All Time" or "Current View"?
+        // In previous code, statsQuery used `targetIds` ONLY. It did NOT use `status` or `search`.
+        // So we keep stats global for the admin dashboard feel.
         const statsQuery = { userId: { $in: targetIds } };
         const total = await Leave.countDocuments(statsQuery);
         const approved = await Leave.countDocuments({ ...statsQuery, status: 'Approved' });
         const pending = await Leave.countDocuments({ ...statsQuery, status: 'Pending' });
         const rejected = await Leave.countDocuments({ ...statsQuery, status: 'Rejected' });
 
-        const stats = {
-            total,
-            approved,
-            pending,
-            rejected
-        };
+        res.json({
+            leaves,
+            stats: {
+                total,
+                approved,
+                pending,
+                rejected
+            },
+            pagination: {
+                total: totalRecords,
+                page: pageNum,
+                limit: limitNum,
+                pages: Math.ceil(totalRecords / limitNum)
+            }
+        });
 
-        // Sort
-        if (sortBy) {
-            leaves.sort((a, b) => {
-                let valA = a[sortBy];
-                let valB = b[sortBy];
-
-                if (typeof valA === 'string') valA = valA.toLowerCase();
-                if (typeof valB === 'string') valB = valB.toLowerCase();
-
-                if (valA < valB) return order === 'desc' ? 1 : -1;
-                if (valA > valB) return order === 'desc' ? -1 : 1;
-                return 0;
-            });
-        } else {
-            // Default sort by Date (appliedOn)
-            leaves.sort((a, b) => new Date(b.appliedOn) - new Date(a.appliedOn));
-        }
-
-        res.json({ stats, leaves });
     } catch (error) {
         console.error("Get Leaves Error:", error);
         res.status(500).json({ message: "Server Error" });
@@ -1313,7 +1403,7 @@ exports.deleteHoliday = async (req, res) => {
 
 exports.getEmployeeBankDetails = async (req, res) => {
     try {
-        const { search, role, status, department } = req.query;
+        const { search, role, status, department, page = 1, limit = 10 } = req.query;
 
         // Base Query
         let query = {};
@@ -1326,7 +1416,13 @@ exports.getEmployeeBankDetails = async (req, res) => {
         }
 
         // 2. Status Filter
-        if (status && status !== 'All' && status !== 'ALL') {
+        if (status === 'ADDED') {
+            query['bankDetails.accountNumber'] = { $exists: true, $ne: '' };
+            query.status = { $ne: 'Pending' };
+        } else if (status === 'NOT_ADDED') {
+            query['bankDetails.accountNumber'] = { $in: [null, ''] };
+            query.status = { $ne: 'Pending' };
+        } else if (status && status !== 'All' && status !== 'ALL') {
             query.status = { $regex: new RegExp(`^${status}$`, 'i') };
         } else {
             query.status = { $ne: 'Pending' };
@@ -1349,9 +1445,20 @@ exports.getEmployeeBankDetails = async (req, res) => {
             ];
         }
 
-        const employees = await User.find(query).select('id name role designation bankDetails avatar profileImage department status email');
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
-        // Stats calculation (Global)
+        // Get paginated employees
+        const employees = await User.find(query)
+            .select('id name role designation bankDetails avatar profileImage department status email')
+            .skip(skip)
+            .limit(limitNum);
+
+        // Get total count for pagination
+        const totalRecords = await User.countDocuments(query);
+
+        // Stats calculation (Global) - largely independent of filters except role
         const totalEmployeesCount = await User.countDocuments({ role: { $ne: 'ADMIN' } });
         const bankAccountsAddedCount = await User.countDocuments({
             role: { $ne: 'ADMIN' },
@@ -1376,7 +1483,13 @@ exports.getEmployeeBankDetails = async (req, res) => {
                 totalEmployees: totalEmployeesCount,
                 bankAccountsAdded: bankAccountsAddedCount
             },
-            employees: employeeData
+            employees: employeeData,
+            pagination: {
+                total: totalRecords,
+                page: pageNum,
+                limit: limitNum,
+                pages: Math.ceil(totalRecords / limitNum)
+            }
         });
 
     } catch (error) {
@@ -1751,12 +1864,13 @@ exports.updateNotificationStatus = async (req, res) => {
 
 
 // COMPLAINTS
+// COMPLAINTS
 exports.getAdminComplaints = async (req, res) => {
     try {
         const { search, status } = req.query;
         let query = {};
 
-        if (status && status !== 'All') {
+        if (status && status !== 'All' && status !== 'ALL') {
             const statusArray = status.split(',').map(s => s.trim());
             const statusRegex = statusArray.map(s => new RegExp(`^${s}$`, 'i'));
             query.status = { $in: statusRegex };
@@ -1771,7 +1885,16 @@ exports.getAdminComplaints = async (req, res) => {
             ];
         }
 
-        const complaints = await Complaint.find(query).sort({ date: -1 }).lean();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const total = await Complaint.countDocuments(query);
+        const complaints = await Complaint.find(query)
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
         // Enrich with User Role & Avatar
         const userIds = [...new Set(complaints.map(c => c.userId))];
@@ -1786,7 +1909,27 @@ exports.getAdminComplaints = async (req, res) => {
             profileImage: userMap[c.userId]?.profileImage
         }));
 
-        res.json(enrichedComplaints);
+        // Calculate global stats (independent of filters)
+        const totalComplaints = await Complaint.countDocuments({});
+        const openComplaints = await Complaint.countDocuments({ status: "Open" });
+        const investigatingComplaints = await Complaint.countDocuments({ status: "Investigating" });
+        const resolvedComplaints = await Complaint.countDocuments({ status: "Resolved" });
+
+        res.json({
+            complaints: enrichedComplaints,
+            pagination: {
+                total,
+                page,
+                pages: Math.ceil(total / limit),
+                limit,
+                stats: {
+                    total: totalComplaints,
+                    open: openComplaints,
+                    investigating: investigatingComplaints,
+                    resolved: resolvedComplaints
+                }
+            }
+        });
     } catch (error) {
         console.error("Get Complaints Error:", error);
         res.status(500).json({ message: "Server Error" });
@@ -1987,63 +2130,140 @@ exports.getEmployeeSalaryDetails = async (req, res) => {
 // DOCUMENTS
 exports.getAllEmployeeDocuments = async (req, res) => {
     try {
-        const { search, status } = req.query;
-        let query = { role: { $ne: 'ADMIN' }, status: 'Active' }; // Only active employees
+        const { search, status, page = 1, limit = 10 } = req.query;
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
+        // Base Match Stage (Active & Role)
+        const matchStage = {
+            role: { $ne: 'ADMIN' },
+            status: 'Active'
+        };
+
+        // Search Logic
         if (search) {
-            query.$or = [
+            matchStage.$or = [
                 { name: { $regex: search, $options: 'i' } },
                 { id: { $regex: search, $options: 'i' } },
                 { department: { $regex: search, $options: 'i' } }
             ];
         }
 
-        const employees = await User.find(query).select('id name department designation documents profileImage avatar');
-
-        // Process employees to calculate stats
-        const employeesWithStats = employees.map(emp => {
-            const docs = emp.documents || [];
-            const pendingCount = docs.filter(d => d.status === 'Review').length;
-            const verifiedCount = docs.filter(d => d.status === 'Verified').length;
-            const rejectedCount = docs.filter(d => d.status === 'Rejected').length;
-
-            // Apply Status Filter if needed (at employee level? or just stats)
-            // If filter is 'Pending', maybe we only return employees who have pending docs?
-            // For now, let's filter the list if status is provided
-
-            return {
-                id: emp.id,
-                name: emp.name,
-                department: emp.department,
-                designation: emp.designation,
-                profileImage: emp.profileImage,
-                avatar: emp.avatar,
-                uploads: docs.length,
-                pending: pendingCount,
-                verified: verifiedCount,
-                rejected: rejectedCount,
-                hasPending: pendingCount > 0,
-                hasVerified: verifiedCount > 0
-            };
-        }).filter(e => e.uploads > 0); // Only show employees active with documents
-
-        let result = employeesWithStats;
+        // Status Filter Logic (Applied later in aggregation)
+        let statusMatch = {};
         if (status === 'Pending') {
-            result = result.filter(e => e.hasPending);
+            statusMatch = { hasPending: true };
         } else if (status === 'Verified') {
-            // Maybe implies fully verified or at least one? Let's say needs review cleared
-            result = result.filter(e => !e.hasPending && e.hasVerified);
+            statusMatch = { hasPending: false, hasVerified: true };
         }
 
-        // Calculate Global Stats
-        const globalStats = {
-            total: employeesWithStats.reduce((sum, e) => sum + e.uploads, 0),
-            verified: employeesWithStats.reduce((sum, e) => sum + e.verified, 0),
-            pending: employeesWithStats.reduce((sum, e) => sum + e.pending, 0),
-            rejected: employeesWithStats.reduce((sum, e) => sum + e.rejected, 0)
-        };
+        const pipeline = [
+            { $match: matchStage },
+            // Project & Calculate Counts
+            {
+                $project: {
+                    id: 1, name: 1, department: 1, designation: 1, profileImage: 1, avatar: 1,
+                    documents: 1, // Need docs for frontend preview? The frontend uses just count in table, but dialog fetches details.
+                    // Actually frontend table just shows counts. We can keep docs or just project them out if payload is heavy.
+                    // The frontend code: `uploads: number`, `pending: number`.
+                    // But wait, the frontend renders `employees` list.
+                    // Line 295 of Documents.tsx: `apiFetch('/api/admin/documents/${employee.id}')`.
+                    // So main list DOES NOT need full documents array, just stats. Good for performance.
 
-        res.json({ employees: result, stats: globalStats });
+                    totalUploads: { $size: { $ifNull: ["$documents", []] } },
+                    pendingDocs: {
+                        $size: {
+                            $filter: {
+                                input: { $ifNull: ["$documents", []] },
+                                as: "doc",
+                                cond: { $eq: ["$$doc.status", "Review"] }
+                            }
+                        }
+                    },
+                    verifiedDocs: {
+                        $size: {
+                            $filter: {
+                                input: { $ifNull: ["$documents", []] },
+                                as: "doc",
+                                cond: { $eq: ["$$doc.status", "Verified"] }
+                            }
+                        }
+                    },
+                    rejectedDocs: {
+                        $size: {
+                            $filter: {
+                                input: { $ifNull: ["$documents", []] },
+                                as: "doc",
+                                cond: { $eq: ["$$doc.status", "Rejected"] }
+                            }
+                        }
+                    }
+                }
+            },
+            // Add boolean flags for filtering
+            {
+                $addFields: {
+                    hasPending: { $gt: ["$pendingDocs", 0] },
+                    hasVerified: { $gt: ["$verifiedDocs", 0] },
+                    // Map fields to frontend expected names
+                    uploads: "$totalUploads",
+                    pending: "$pendingDocs",
+                    verified: "$verifiedDocs",
+                    rejected: "$rejectedDocs"
+                }
+            },
+            // Filter: Must have at least one upload
+            { $match: { uploads: { $gt: 0 } } },
+            // Facets
+            {
+                $facet: {
+                    // Global Stats (Pre-Status Filter)
+                    stats: [
+                        {
+                            $group: {
+                                _id: null,
+                                total: { $sum: "$uploads" },
+                                verified: { $sum: "$verified" },
+                                pending: { $sum: "$pending" },
+                                rejected: { $sum: "$rejected" }
+                            }
+                        }
+                    ],
+                    // Pagination Data (Post-Status Filter)
+                    data: [
+                        { $match: statusMatch },
+                        { $skip: skip },
+                        { $limit: limitNum }
+                    ],
+                    // Pagination Meta (Post-Status Filter)
+                    meta: [
+                        { $match: statusMatch },
+                        { $count: "total" }
+                    ]
+                }
+            }
+        ];
+
+        const result = await User.aggregate(pipeline);
+
+        const aggregationResult = result[0];
+        const employees = aggregationResult.data || [];
+        const meta = aggregationResult.meta[0] || { total: 0 };
+        const stats = aggregationResult.stats[0] || { total: 0, verified: 0, pending: 0, rejected: 0 };
+        delete stats._id;
+
+        res.json({
+            employees,
+            stats,
+            pagination: {
+                total: meta.total,
+                page: pageNum,
+                limit: limitNum,
+                pages: Math.ceil(meta.total / limitNum)
+            }
+        });
+
     } catch (error) {
         console.error("Get All Documents Error:", error);
         res.status(500).json({ message: "Server Error" });

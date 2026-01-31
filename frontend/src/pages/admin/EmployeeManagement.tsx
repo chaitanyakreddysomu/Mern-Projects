@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 export default function AdminEmployeeManagement() {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("Active");
     const [projectFilter, setProjectFilter] = useState("All");
     const [roleFilter, setRoleFilter] = useState("All");
     const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -32,11 +32,30 @@ export default function AdminEmployeeManagement() {
     const [allEmployees, setAllEmployees] = useState<User[]>([]);
     const [viewEmployee, setViewEmployee] = useState<User | null>(null);
     const [editEmployee, setEditEmployee] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [isTableLoading, setIsTableLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Pagination & Stats State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [stats, setStats] = useState({
+        activeStaff: 0,
+        onBench: 0,
+        activeHR: 0,
+        activeAdmin: 0
+    });
 
     useEffect(() => {
         const fetchEmployees = async () => {
+            // Only show full page loader if we don't have stats yet (first load)
+            if (stats.activeStaff === 0 && isInitialLoading) {
+                // Already true
+            } else {
+                setIsTableLoading(true);
+            }
+
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -44,15 +63,36 @@ export default function AdminEmployeeManagement() {
                     return;
                 }
 
-                const response = await apiFetch('/api/admin/employees', {
+                // Construct URL with query parameters
+                const params = new URLSearchParams();
+                params.append('page', currentPage.toString());
+                params.append('limit', '10');
+                if (searchTerm) params.append('search', searchTerm);
+
+                // Always send status parameter to ensure explicit filtering (All vs Active default)
+                params.append('status', statusFilter);
+
+                if (projectFilter !== 'All') params.append('projectStatus', projectFilter);
+                if (roleFilter !== 'All') params.append('role', roleFilter);
+
+                const response = await apiFetch(`/api/admin/employees?${params.toString()}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    setAllEmployees(data);
+                    if (data.pagination) {
+                        setAllEmployees(data.employees || []);
+                        setTotalPages(data.pagination.pages);
+                        setTotalRecords(data.pagination.total);
+                        if (data.pagination.stats) {
+                            setStats(data.pagination.stats);
+                        }
+                    } else {
+                        // Fallback for older API structure
+                        setAllEmployees(Array.isArray(data) ? data : []);
+                    }
                 } else if (response.status === 401 || response.status === 400) {
-                    // Token expired or invalid
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     navigate('/login');
@@ -62,32 +102,29 @@ export default function AdminEmployeeManagement() {
             } catch (error) {
                 console.error("Failed to fetch employees", error);
             } finally {
-                setIsLoading(false);
+                setIsInitialLoading(false);
+                setIsTableLoading(false);
             }
         };
 
-        fetchEmployees();
-    }, [navigate]);
+        const timer = setTimeout(() => {
+            fetchEmployees();
+        }, 300); // 300ms debounce for search
 
-    // Filter employees based on search and dropdowns
-    const employees = allEmployees.filter(u => {
-        const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase());
+        return () => clearTimeout(timer);
+    }, [navigate, currentPage, searchTerm, statusFilter, projectFilter, roleFilter]);
 
-        const matchesStatus = statusFilter === "All" ? u.status !== 'Rejected' : u.status === statusFilter;
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, projectFilter, roleFilter]);
 
-        const matchesProject = projectFilter === "All" ||
-            (projectFilter === "In Project" ? u.projectStatus === "In Project" : !u.projectStatus || u.projectStatus === "Bench");
+    // Use employees directly from state since backend handles filtering
+    const employees = allEmployees;
 
-        // Special Rule: Admins are hidden in "All" view, only shown when explicitly filtered
-        const matchesRole = roleFilter === "All" ? true : u.role === roleFilter;
-
-        return matchesSearch && matchesStatus && matchesProject && matchesRole;
-    });
-
-    const activeEmployees = allEmployees.filter(u => u.status === "Active").length;
-    const benchEmployees = allEmployees.filter(u => u.projectStatus !== "In Project" && u.role === "EMPLOYEE" && u.status === "Active").length;
-    const hrCount = allEmployees.filter(u => u.role === "HR" || u.role === "ADMIN").length;
+    // Note: These stats come from backend pagination metadata
+    const activeEmployees = stats.activeStaff;
+    const benchEmployees = stats.onBench;
 
     const handleFilterChange = (setter: (value: string) => void, value: string) => {
         setIsFilterLoading(true);
@@ -101,7 +138,7 @@ export default function AdminEmployeeManagement() {
         if (!editEmployee) return;
 
         try {
-            setIsLoading(true);
+            // setIsLoading(true); // Don't trigger full page reload on update
             const token = localStorage.getItem('token');
             const response = await apiFetch(`/api/admin/employees/${editEmployee.id}`, {
                 method: 'PUT',
@@ -123,7 +160,7 @@ export default function AdminEmployeeManagement() {
         } catch (error) {
             console.error("Error updating employee:", error);
         } finally {
-            setIsLoading(false);
+            // No loading state needed for update specifically in this context
         }
     };
 
@@ -146,7 +183,8 @@ export default function AdminEmployeeManagement() {
                 </Button> */}
             </div>
 
-            {isLoading ? (
+
+            {isInitialLoading ? (
                 <div className="text-center py-10">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-violet-600 border-r-transparent mb-2"></div>
                     <p className="text-muted-foreground">Loading employees...</p>
@@ -157,7 +195,7 @@ export default function AdminEmployeeManagement() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                         <StatCard
                             title="Total Staff"
-                            value={allEmployees.length.toString()}
+                            value={totalRecords.toString()}
                             color="violet"
                             icon={Users}
                         />
@@ -175,8 +213,8 @@ export default function AdminEmployeeManagement() {
                         />
                         <StatCard
                             title="HR Team"
-                            value={hrCount.toString()}
-                            subtitle="Admins & HRs"
+                            value={`${stats.activeHR} / ${stats.activeAdmin}`}
+                            subtitle="HRs / Admins"
                             color="blue"
                             icon={ShieldCheck}
                         />
@@ -243,21 +281,30 @@ export default function AdminEmployeeManagement() {
 
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="rounded-md border">
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto min-h-[400px]">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="hover:bg-transparent">
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>Department</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Project</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                        <TableRow className="bg-slate-50">
+                                            <TableHead className="pl-6 font-semibold text-slate-700">Name</TableHead>
+                                            <TableHead className="font-semibold text-slate-700">Role</TableHead>
+                                            <TableHead className="font-semibold text-slate-700">Department</TableHead>
+                                            <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                                            <TableHead className="font-semibold text-slate-700">Project</TableHead>
+                                            <TableHead className="text-right font-semibold text-slate-700 pr-6">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isFilterLoading ? (
+                                        {isTableLoading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-64 text-center">
+                                                    <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                                                        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+                                                        <p>Updating...</p>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : isFilterLoading ? (
                                             <TableRow>
                                                 <TableCell colSpan={6} className="h-24 text-center">
                                                     <div className="flex justify-center items-center h-full">
@@ -273,11 +320,11 @@ export default function AdminEmployeeManagement() {
                                             </TableRow>
                                         ) : (
                                             employees.map((employee) => (
-                                                <TableRow key={employee.id} className="hover:bg-transparent">
-                                                    <TableCell>
+                                                <TableRow key={employee.id} className="hover:bg-slate-50/50">
+                                                    <TableCell className="pl-6">
                                                         <div className="flex items-center gap-3">
                                                             <Avatar className="h-9 w-9 border border-indigo-100">
-                                                                <AvatarImage src={employee.profileImage || employee.avatar || `https://ui-avatars.com/api/?name=${employee.name}&background=random`} alt={employee.name} />
+                                                                <AvatarImage className="object-cover" src={employee.profileImage || employee.avatar || `https://ui-avatars.com/api/?name=${employee.name}&background=random`} alt={employee.name} />
                                                                 <AvatarFallback>{employee.name.charAt(0)}</AvatarFallback>
                                                             </Avatar>
                                                             <div className="flex flex-col">
@@ -311,18 +358,20 @@ export default function AdminEmployeeManagement() {
                                                             {employee.projectStatus || "Bench"}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-right pr-6">
                                                         <div className="flex justify-end gap-2">
                                                             <Button
                                                                 size="icon"
-                                                                className="h-8 w-8 bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-md shadow-violet-600/20"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
                                                                 onClick={() => setViewEmployee(employee)}
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
                                                             <Button
                                                                 size="icon"
-                                                                className="h-8 w-8 bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-md shadow-violet-600/20"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
                                                                 onClick={() => setEditEmployee(employee)}
                                                             >
                                                                 <Edit className="h-4 w-4" />
@@ -335,6 +384,33 @@ export default function AdminEmployeeManagement() {
                                     </TableBody>
                                 </Table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            <div className="flex items-center justify-between p-4 border-t bg-slate-50/50">
+                                <div className="text-sm text-muted-foreground">
+                                    Page <span className="font-medium text-slate-900">{currentPage}</span> of <span className="font-medium text-slate-900">{totalPages === 0 ? 1 : totalPages}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1 || isTableLoading}
+                                        className="h-8"
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage >= totalPages || isTableLoading}
+                                        className="h-8"
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -344,7 +420,7 @@ export default function AdminEmployeeManagement() {
                             <DialogHeader>
                                 <DialogTitle className="text-2xl font-bold flex items-center gap-4 pb-4 border-b">
                                     <Avatar className="h-12 w-12 border-2 border-violet-100 shadow-md">
-                                        <AvatarImage src={viewEmployee?.profileImage || viewEmployee?.avatar || `https://ui-avatars.com/api/?name=${viewEmployee?.name}&background=random`} alt={viewEmployee?.name} />
+                                        <AvatarImage className="object-cover" src={viewEmployee?.profileImage || viewEmployee?.avatar || `https://ui-avatars.com/api/?name=${viewEmployee?.name}&background=random`} alt={viewEmployee?.name} />
                                         <AvatarFallback className="text-lg bg-violet-100 text-violet-700">
                                             {viewEmployee?.name?.charAt(0)}
                                         </AvatarFallback>
@@ -777,15 +853,15 @@ export default function AdminEmployeeManagement() {
                                 <Button
                                     className="bg-violet-600 hover:bg-violet-700 text-white"
                                     onClick={handleUpdateEmployee}
-                                    disabled={isLoading}
                                 >
-                                    {isLoading ? 'Saving...' : 'Save Changes'}
+                                    Save Changes
                                 </Button>
                             </div>
                         </DialogContent>
                     </Dialog >
                 </>
-            )}
+            )
+            }
         </div >
     );
 }

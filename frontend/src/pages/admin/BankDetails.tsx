@@ -43,18 +43,36 @@ export default function AdminBankDetails() {
         totalEmployees: 0,
         bankAccountsAdded: 0
     });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+
     const [loading, setLoading] = useState(true);
 
     const fetchBankDetails = async () => {
+        setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await apiFetch('/api/admin/employee-bank-details', {
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: '10'
+            });
+
+            if (searchTerm) params.append('search', searchTerm);
+            if (roleFilter !== 'ALL') params.append('role', roleFilter);
+            if (statusFilter !== 'ALL') params.append('status', statusFilter);
+
+            const res = await apiFetch(`/api/admin/employee-bank-details?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
                 setEmployees(data.employees);
                 setStats(data.stats);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.pages);
+                    setTotalRecords(data.pagination.total);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch bank details", error);
@@ -64,26 +82,16 @@ export default function AdminBankDetails() {
     };
 
     useEffect(() => {
-        fetchBankDetails();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchBankDetails();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [currentPage, searchTerm, roleFilter, statusFilter]);
 
-    const filteredEmployees = employees.filter(emp => {
-        const matchesSearch = (
-            emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            emp.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            emp.bankDetails?.bankName?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        const matchesRole = roleFilter === "ALL" || emp.role === roleFilter;
-
-        let matchesStatus = true;
-        if (statusFilter === "ADDED") {
-            matchesStatus = !!(emp.bankDetails?.accountNumber);
-        } else if (statusFilter === "NOT_ADDED") {
-            matchesStatus = !(emp.bankDetails?.accountNumber);
-        }
-
-        return matchesSearch && matchesRole && matchesStatus;
-    });
+    // Reset page on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, roleFilter, statusFilter]);
 
     const pendingVerification = 0; // Mock until backend supports it
     const missingDetails = stats.totalEmployees - stats.bankAccountsAdded;
@@ -193,18 +201,18 @@ export default function AdminBankDetails() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ) : filteredEmployees.length === 0 ? (
+                                ) : employees.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-24 text-center">No bank details found.</TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredEmployees.map((emp) => (
+                                    employees.map((emp) => (
                                         <TableRow key={emp.id} className="hover:bg-slate-50/50 transition-colors">
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-9 w-9">
-                                                        <AvatarImage src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
-                                                        <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
+                                                        <AvatarImage className="object-cover" src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
+                                                        <AvatarFallback>{(emp.name || '?').charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-slate-900">{emp.name}</span>
@@ -259,6 +267,35 @@ export default function AdminBankDetails() {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-4 py-4 border-t bg-slate-50/50">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalRecords)} of {totalRecords} entries
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <span className="text-sm font-medium min-w-[3rem] text-center">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+
                 </CardContent>
             </Card>
         </div>

@@ -274,11 +274,11 @@ export default function AdminLogs() {
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
                                                         <Avatar className="h-8 w-8">
-                                                            <AvatarImage src={log.user.profileImage || `https://ui-avatars.com/api/?name=${log.user.name}&background=2563EB&color=fff`} />
-                                                            <AvatarFallback className="text-xs font-bold">{log.user.name.charAt(0)}</AvatarFallback>
+                                                            <AvatarImage className="object-cover" src={log.user?.profileImage || `https://ui-avatars.com/api/?name=${log.user?.name}&background=random`} />
+                                                            <AvatarFallback>{(log.user?.name || '?').charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex flex-col">
-                                                            <span className="font-medium text-sm text-slate-900">{log.user.name}</span>
+                                                            <span className="font-medium text-sm text-slate-900">{log.user?.name}</span>
                                                         </div>
                                                     </div>
                                                 </TableCell>

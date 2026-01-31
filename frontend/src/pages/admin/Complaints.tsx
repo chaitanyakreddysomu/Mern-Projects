@@ -47,6 +47,16 @@ export default function AdminComplaints() {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState("");
 
+    // Pagination & Stats
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [stats, setStats] = useState({
+        total: 0,
+        open: 0,
+        investigating: 0,
+        resolved: 0
+    });
+
     // Debounce search
     const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -60,6 +70,8 @@ export default function AdminComplaints() {
         try {
             const token = localStorage.getItem('token');
             const queryParams = new URLSearchParams();
+            queryParams.append('page', currentPage.toString());
+            queryParams.append('limit', '10');
             if (filterStatus !== 'All') queryParams.append('status', filterStatus);
             if (debouncedSearch) queryParams.append('search', debouncedSearch);
 
@@ -68,7 +80,12 @@ export default function AdminComplaints() {
             });
             if (res.ok) {
                 const data = await res.json();
-                const mapped = data.map((c: any) => ({
+
+                // Handle new paginated response structure
+                const rawComplaints = data.complaints || [];
+                const pagination = data.pagination;
+
+                const mapped = rawComplaints.map((c: any) => ({
                     id: c._id,
                     userId: c.userId,
                     userName: c.userName || 'Unknown',
@@ -81,6 +98,13 @@ export default function AdminComplaints() {
                     department: c.department || 'General'
                 }));
                 setComplaints(mapped);
+
+                if (pagination) {
+                    setTotalPages(pagination.pages);
+                    if (pagination.stats) {
+                        setStats(pagination.stats);
+                    }
+                }
             }
         } catch (error) {
             console.error("Fetch complaints failed", error);
@@ -91,6 +115,11 @@ export default function AdminComplaints() {
 
     useEffect(() => {
         fetchComplaints();
+    }, [filterStatus, debouncedSearch, currentPage]);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
     }, [filterStatus, debouncedSearch]);
 
     const handleUpdateStatus = async (status: string) => {
@@ -115,26 +144,11 @@ export default function AdminComplaints() {
         }
     };
 
-    // Stats Calculation (based on fetched data mostly, or separate stats API?
-    // User requested separate stats logic usually but here we can derive from list if list is ALL.
-    // However, if we paginate or filter, stats might be wrong.
-    // But for now, let's assume we fetch most recent/all if filtered is All.
-    // Or we should fetch stats separately.
-    // The previous code calculated stats from ALL_EMPLOYEE_COMPLAINTS constant.
-    // If backend returns all, we are fine.
-
-    // Simplification: Calculate from current 'complaints' state if 'All' filter is on, 
-    // OR ideally we need a separate stats object from backend, but let's stick to frontend derivation for simple MVP if data size is small.
-    // Actually, if I filter by "Open", I lose count of "Resolved".
-    // I should probably fetch ALL once or fetch stats endpoint.
-    // For now, I will just use length of current view which is not ideal but prevents errors.
-    // BETTER: Use 'complaints' only if filter is ALL, else these numbers are wrong.
-    // Let's just calculate from what we have, acknowledging limitations.
-
-    const totalComplaints = complaints.length; // Approximate if filtered
-    const openComplaints = complaints.filter(c => c.status === "Open").length;
-    const investigatingComplaints = complaints.filter(c => c.status === "Investigating").length;
-    const resolvedComplaints = complaints.filter(c => c.status === "Resolved").length;
+    // Stats are now fetched from backend
+    const totalComplaints = stats.total;
+    const openComplaints = stats.open;
+    const investigatingComplaints = stats.investigating;
+    const resolvedComplaints = stats.resolved;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -149,7 +163,7 @@ export default function AdminComplaints() {
                 <p className="text-muted-foreground mt-1 ml-14">Investigate and resolve employee grievances.</p>
             </div>
 
-            {/* STAT CARDS - Only accurate if Filter is All */}
+            {/* STAT CARDS */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard title="Total Complaints" value={totalComplaints.toString()} color="violet" icon={FileWarning} />
                 <StatCard title="Open" value={openComplaints.toString()} color="red" icon={AlertCircle} />
@@ -219,7 +233,7 @@ export default function AdminComplaints() {
                                             <td className="p-4 align-middle font-medium">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 hover:ring-sky-100 transition-all">
-                                                        <AvatarImage src={complaint.profileImage || `https://ui-avatars.com/api/?name=${complaint.userName}&background=2563EB&color=fff`} alt={complaint.userName} />
+                                                        <AvatarImage className="object-cover" src={complaint.profileImage || `https://ui-avatars.com/api/?name=${complaint.userName}&background=2563EB&color=fff`} alt={complaint.userName} />
                                                         <AvatarFallback className="bg-sky-100 text-sky-700">{complaint.userName.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
@@ -265,6 +279,33 @@ export default function AdminComplaints() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between p-4 border-t bg-slate-50/50">
+                        <div className="text-sm text-muted-foreground">
+                            Page <span className="font-medium text-slate-900">{currentPage}</span> of <span className="font-medium text-slate-900">{totalPages === 0 ? 1 : totalPages}</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1 || loading}
+                                className="h-8"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage >= totalPages || loading}
+                                className="h-8"
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

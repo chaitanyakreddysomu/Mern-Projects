@@ -156,7 +156,7 @@ export default function AdminNotifications() {
             });
             if (res.ok) {
                 const data = await res.json();
-                setEmployeesList(data);
+                setEmployeesList(data.employees || (Array.isArray(data) ? data : []));
             }
         } catch (error) {
             console.error("Fetch employees failed", error);

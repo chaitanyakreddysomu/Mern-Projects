@@ -66,6 +66,7 @@ interface LeaveStats {
 export default function AdminLeaves() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+    const [typeFilter, setTypeFilter] = useState("All"); // New Type Filter
     const [requests, setRequests] = useState<LeaveRequest[]>([]);
     const [stats, setStats] = useState<LeaveStats>({
         total: 0,
@@ -75,6 +76,11 @@ export default function AdminLeaves() {
     });
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
 
     // Rejection Dialog State
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -92,10 +98,14 @@ export default function AdminLeaves() {
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
             if (statusFilter && statusFilter !== 'All') params.append('status', statusFilter);
+            if (typeFilter && typeFilter !== 'All') params.append('type', typeFilter); // Send Type
             if (sortConfig) {
                 params.append('sortBy', sortConfig.key);
                 params.append('order', sortConfig.direction);
             }
+            // Add Pagination Params
+            params.append('page', currentPage.toString());
+            params.append('limit', '10');
 
             const res = await apiFetch(`/api/admin/leaves?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -105,6 +115,10 @@ export default function AdminLeaves() {
                 const data = await res.json();
                 setRequests(data.leaves);
                 setStats(data.stats);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.pages);
+                    setTotalRecords(data.pagination.total);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch leaves", error);
@@ -118,7 +132,12 @@ export default function AdminLeaves() {
             fetchLeaves();
         }, 300);
         return () => clearTimeout(timer);
-    }, [searchTerm, statusFilter, sortConfig]);
+    }, [searchTerm, statusFilter, typeFilter, sortConfig, currentPage]);
+
+    // Reset pagination on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, typeFilter]);
 
     const handleSort = (key: string) => {
         setSortConfig(current => {
@@ -209,6 +228,22 @@ export default function AdminLeaves() {
                 </div>
                 <div className="flex gap-2 w-full md:w-auto items-center">
                     <Select
+                        value={typeFilter}
+                        onValueChange={(value) => setTypeFilter(value)}
+                    >
+                        <SelectTrigger className="w-[180px] bg-white">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Types</SelectItem>
+                            <SelectItem value="Casual">Casual Leave</SelectItem>
+                            <SelectItem value="Sick">Sick Leave</SelectItem>
+                            <SelectItem value="Annual">Annual Leave</SelectItem>
+                            <SelectItem value="WFH">WFH</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select
                         value={statusFilter}
                         onValueChange={(value) => setStatusFilter(value)}
                     >
@@ -268,7 +303,7 @@ export default function AdminLeaves() {
                                             <td className="p-4 align-middle">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={req.profileImage || req.avatar || `https://ui-avatars.com/api/?name=${req.userName}&background=random`} alt={req.userName} />
+                                                        <AvatarImage className="object-cover" src={req.profileImage || req.avatar || `https://ui-avatars.com/api/?name=${req.userName}&background=random`} alt={req.userName} />
                                                         <AvatarFallback>{req.userName ? req.userName.charAt(0) : 'U'}</AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
@@ -341,9 +376,35 @@ export default function AdminLeaves() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-4 py-4 border-t bg-slate-50/50">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalRecords)} of {totalRecords} entries
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <span className="text-sm font-medium min-w-[3rem] text-center">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
-
-
             </Card>
 
             {/* DETAILS DIALOG */}
@@ -356,7 +417,7 @@ export default function AdminLeaves() {
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-12 w-12">
-                                    <AvatarImage src={selectedLeave.profileImage || selectedLeave.avatar || `https://ui-avatars.com/api/?name=${selectedLeave.userName}&background=random`} />
+                                    <AvatarImage className="object-cover" src={selectedLeave.profileImage || selectedLeave.avatar || `https://ui-avatars.com/api/?name=${selectedLeave.userName}&background=random`} />
                                     <AvatarFallback>{selectedLeave.userName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>

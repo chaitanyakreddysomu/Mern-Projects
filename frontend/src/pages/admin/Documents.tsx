@@ -91,13 +91,20 @@ export default function AdminDocuments() {
     const [stats, setStats] = useState({ total: 0, verified: 0, pending: 0, rejected: 0 });
     const [loading, setLoading] = useState(false);
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+
     const fetchDocuments = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
             const queryParams = new URLSearchParams({
                 search: searchTerm,
-                status: docStatusFilter
+                status: docStatusFilter,
+                page: currentPage.toString(),
+                limit: '10'
             });
             const response = await apiFetch(`/api/admin/documents?${queryParams}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -106,6 +113,10 @@ export default function AdminDocuments() {
                 const data = await response.json();
                 setEmployees(data.employees);
                 setStats(data.stats);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.pages);
+                    setTotalRecords(data.pagination.total);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch documents", error);
@@ -115,11 +126,15 @@ export default function AdminDocuments() {
     };
 
     useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, docStatusFilter]);
+
+    useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             fetchDocuments();
         }, 300);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, docStatusFilter]);
+    }, [searchTerm, docStatusFilter, currentPage]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -197,8 +212,8 @@ export default function AdminDocuments() {
                                         <TableCell className="pl-6">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-9 w-9">
-                                                    <AvatarImage src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
-                                                    <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
+                                                    <AvatarImage className="object-cover" src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
+                                                    <AvatarFallback>{(emp.name || '?').charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col">
                                                     <span className="font-semibold text-slate-800">{emp.name}</span>
@@ -232,6 +247,34 @@ export default function AdminDocuments() {
                             )}
                         </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-4 py-4 border-t bg-slate-50/50">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalRecords)} of {totalRecords} entries
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <span className="text-sm font-medium min-w-[3rem] text-center">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 

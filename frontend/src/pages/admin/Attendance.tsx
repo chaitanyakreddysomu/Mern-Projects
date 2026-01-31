@@ -46,11 +46,20 @@ interface AttendanceStats {
     total: number;
 }
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
 export default function AdminAttendance() {
     // State
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchTerm, setSearchTerm] = useState("");
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
+    const [statusFilter, setStatusFilter] = useState("All");
     const [stats, setStats] = useState<AttendanceStats>({
         present: 0,
         late: 0,
@@ -61,7 +70,7 @@ export default function AdminAttendance() {
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-    // Fetch Data
+    // Fetch Data (Keep same)
     const fetchAttendance = async () => {
         setLoading(true);
         try {
@@ -113,7 +122,6 @@ export default function AdminAttendance() {
     // Helpers
     const formatTime = (time: string | null) => {
         if (!time || time === "--") return "--";
-        // Assuming backend sends "HH:mm:ss" or similar
         const [hours, minutes, seconds] = time.split(':');
         const date = new Date();
         date.setHours(parseInt(hours));
@@ -127,6 +135,10 @@ export default function AdminAttendance() {
             hour12: true,
         });
     };
+
+    const filteredRecords = records.filter(rec => {
+        return statusFilter === "All" || rec.status === statusFilter;
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -163,6 +175,20 @@ export default function AdminAttendance() {
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="w-auto bg-white"
                     />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[140px] bg-white">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="All">All Status</SelectItem>
+                            <SelectItem value="Present">Present</SelectItem>
+                            <SelectItem value="Late">Late</SelectItem>
+                            <SelectItem value="Absent">Absent</SelectItem>
+                            <SelectItem value="WFH">WFH</SelectItem>
+                            <SelectItem value="Half Day">Half Day</SelectItem>
+                            <SelectItem value="On Leave">On Leave</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <Button className="bg-blue-600 hover:bg-blue-700">Export Report</Button>
                 </div>
             </div>
@@ -180,14 +206,22 @@ export default function AdminAttendance() {
                                     <th className="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-slate-100" onClick={() => handleSort('name')}>
                                         <div className="flex items-center gap-1">Employee <ArrowUpDown className="h-3 w-3" /></div>
                                     </th>
-                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Date</th>
-                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Punch In</th>
-                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Punch Out</th>
+                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-slate-100" onClick={() => handleSort('date')}>
+                                        <div className="flex items-center gap-1">Date <ArrowUpDown className="h-3 w-3" /></div>
+                                    </th>
+                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-slate-100" onClick={() => handleSort('punchIn')}>
+                                        <div className="flex items-center gap-1">Punch In <ArrowUpDown className="h-3 w-3" /></div>
+                                    </th>
+                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-slate-100" onClick={() => handleSort('punchOut')}>
+                                        <div className="flex items-center gap-1">Punch Out <ArrowUpDown className="h-3 w-3" /></div>
+                                    </th>
                                     <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Location</th>
                                     <th className="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-slate-100" onClick={() => handleSort('status')}>
                                         <div className="flex items-center gap-1">Status <ArrowUpDown className="h-3 w-3" /></div>
                                     </th>
-                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">Time Working</th>
+                                    <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('totalHours')}>
+                                        <div className="flex items-center justify-end gap-1">Time Working <ArrowUpDown className="h-3 w-3" /></div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="[&_tr:last-child]:border-0">
@@ -199,20 +233,20 @@ export default function AdminAttendance() {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : records.length === 0 ? (
+                                ) : filteredRecords.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="h-24 text-center text-muted-foreground">
                                             No records found for this date.
                                         </td>
                                     </tr>
                                 ) : (
-                                    records.map((emp) => (
+                                    filteredRecords.map((emp) => (
                                         <tr key={emp.id} className="border-b transition-colors hover:bg-transparent">
                                             <td className="p-4 align-middle font-medium">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
-                                                        <AvatarFallback>{emp.name.charAt(0)}</AvatarFallback>
+                                                        <AvatarImage className="object-cover" src={emp.profileImage || emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}&background=random`} />
+                                                        <AvatarFallback>{(emp.name || '?').charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
                                                         <span>{emp.name}</span>

@@ -143,11 +143,31 @@ export default function AdminPayslips() {
 
     const [salaryStructures, setSalaryStructures] = useState<any[]>([]); // New State
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+
+    // Stats & Search State
+    const [stats, setStats] = useState({ total: 0, draft: 0, created: 0, paid: 0 });
+    const [searchTerm, setSearchTerm] = useState("");
+
     // --- EFFECTS ---
     useEffect(() => {
-        fetchPayslips();
+        const timer = setTimeout(() => {
+            fetchPayslips();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [filterMonth, filterYear, filterStatus, currentPage, searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterMonth, filterYear, filterStatus, searchTerm]);
+
+    useEffect(() => {
+        // fetchEmployees(); // Already called in main useEffect
         fetchEmployees();
-        fetchSalaryStructures(); // Fetch on load
+        fetchSalaryStructures();
     }, []);
 
     const fetchSalaryStructures = async () => {
@@ -212,12 +232,42 @@ export default function AdminPayslips() {
         setTableLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await apiFetch('/api/admin/payslips', {
+
+            // Build Query Params including Pagination & Filters & Search
+            const query = new URLSearchParams();
+            if (searchTerm) query.append('search', searchTerm);
+            if (filterMonth && filterMonth !== 'All') query.append('month', filterMonth);
+            if (filterYear && filterYear !== 'All') query.append('year', filterYear);
+            if (filterStatus && filterStatus !== 'All') query.append('status', filterStatus);
+            query.append('page', currentPage.toString());
+            query.append('limit', '10');
+
+            const res = await apiFetch(`/api/admin/payslips?${query.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
-                setPayslips(data.map((d: any) => ({ ...d, id: d._id })));
+                if (data.payslips) {
+                    setPayslips(data.payslips.map((d: any) => ({ ...d, id: d._id })));
+
+                    if (data.pagination) {
+                        setTotalPages(data.pagination.pages);
+                        setTotalRecords(data.pagination.total);
+
+                        // Extract Stats from Pagination
+                        setStats({
+                            total: data.pagination.totalAll || 0,
+                            draft: data.pagination.drafts || 0,
+                            created: data.pagination.created || 0,
+                            paid: data.pagination.paid || 0
+                        });
+                    }
+                } else if (Array.isArray(data)) {
+                    // Fallback for legacy
+                    setPayslips(data.map((d: any) => ({ ...d, id: d._id })));
+                } else {
+                    setPayslips([]);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch payslips", error);
@@ -233,7 +283,8 @@ export default function AdminPayslips() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                setEmployees(await res.json());
+                const data = await res.json();
+                setEmployees(data.employees || (Array.isArray(data) ? data : []));
             }
         } catch (error) {
             console.error("Failed to fetch employees", error);
@@ -464,18 +515,8 @@ export default function AdminPayslips() {
         }
     };
 
-    const filteredEmployeePayslips = payslips.filter(slip => {
-        const matchStatus = filterStatus === "All" || slip.status === filterStatus;
-        const matchMonth = filterMonth === "All" || slip.month === filterMonth;
-        const matchYear = filterYear === "All" || slip.year === filterYear;
-        return matchStatus && matchMonth && matchYear;
-    }).sort((a, b) => new Date(b.generatedOn).getTime() - new Date(a.generatedOn).getTime());
-
-    // --- STATS CALCULATIONS ---
-    const totalPayslips = filteredEmployeePayslips.length;
-    const draftPayslips = filteredEmployeePayslips.filter(p => p.status === "Draft").length;
-    const createdPayslips = filteredEmployeePayslips.filter(p => p.status === "Created").length;
-    const paidPayslips = filteredEmployeePayslips.filter(p => p.status === "Paid").length;
+    // Backend handles filtering & sorting
+    const filteredEmployeePayslips = payslips;
 
     const numberToWords = (num: number): string => {
         if (num === 0) return "Zero Rupees Only";
@@ -527,25 +568,25 @@ export default function AdminPayslips() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     title="Total Payslips"
-                    value={totalPayslips.toString()}
+                    value={stats.total.toString()}
                     color="violet"
                     icon={Wallet}
                 />
                 <StatCard
                     title="Drafts"
-                    value={draftPayslips.toString()}
+                    value={stats.draft.toString()}
                     color="orange"
                     icon={FileText}
                 />
                 <StatCard
                     title="Created"
-                    value={createdPayslips.toString()}
+                    value={stats.created.toString()}
                     color="blue"
                     icon={CheckCircle2}
                 />
                 <StatCard
                     title="Paid"
-                    value={paidPayslips.toString()}
+                    value={stats.paid.toString()}
                     color="green"
                     icon={DollarSign}
                 />
@@ -560,6 +601,8 @@ export default function AdminPayslips() {
                         <input
                             className="w-full h-10 pl-10 pr-4 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                             placeholder="Search employees..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
 
@@ -952,7 +995,7 @@ export default function AdminPayslips() {
                                                 <td className="p-4 align-middle font-medium">
                                                     <div className="flex items-center gap-3">
                                                         <Avatar className="h-9 w-9">
-                                                            <AvatarImage src={slip.profileImage || slip.avatar || `https://ui-avatars.com/api/?name=${slip.name}&background=random`} />
+                                                            <AvatarImage className="object-cover" src={slip.profileImage || slip.avatar || `https://ui-avatars.com/api/?name=${slip.name}&background=random`} />
                                                             <AvatarFallback>{slip.name.charAt(0)}</AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex flex-col">
@@ -1061,6 +1104,34 @@ export default function AdminPayslips() {
                                         )))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-between px-4 py-4 border-t bg-slate-50/50">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalRecords)} of {totalRecords} entries
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </Button>
+                                <span className="text-sm font-medium min-w-[3rem] text-center">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
