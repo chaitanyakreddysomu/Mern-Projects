@@ -15,6 +15,9 @@ import {
     Clock,
     Search,
     Eye,
+    Sparkles,
+    Wand2,
+    Loader2
 } from "lucide-react";
 import * as React from "react"
 import { cn } from "@/lib/utils"
@@ -53,6 +56,8 @@ export default function HRComplaints() {
     const [myComplaints, setMyComplaints] = useState<any[]>([]);
     const [newComplaint, setNewComplaint] = useState({ subject: "", description: "" });
     const [myLoading, setMyLoading] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // State for Employee Complaints Management
     const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
@@ -309,6 +314,71 @@ export default function HRComplaints() {
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-6 py-4">
+                                    {/* AI GENERATION SECTION */}
+                                    <div className="space-y-2 p-4 bg-orange-50/50 rounded-lg border border-dashed border-orange-200">
+                                        <Label className="text-orange-700 flex items-center gap-2 font-medium">
+                                            <Sparkles className="h-4 w-4 text-orange-500" />
+                                            AI Complaint Assistant
+                                        </Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="e.g. AC is not working in the meeting room since yesterday..."
+                                                value={aiPrompt}
+                                                onChange={(e) => setAiPrompt(e.target.value)}
+                                                className="bg-white border-orange-200 focus-visible:ring-orange-500"
+                                            />
+                                            <Button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!aiPrompt) return;
+                                                    setIsGenerating(true);
+                                                    try {
+                                                        const token = localStorage.getItem('token');
+                                                        if (!token) {
+                                                            alert("Authentication token not found. Please log in again.");
+                                                            setIsGenerating(false);
+                                                            return;
+                                                        }
+
+                                                        const res = await apiFetch('/api/ai/generate-complaint', {
+                                                            method: 'POST',
+                                                            headers: { 'Authorization': `Bearer ${token}` },
+                                                            body: JSON.stringify({ complaint: aiPrompt })
+                                                        });
+
+                                                        const data = await res.json();
+
+                                                        if (res.ok) {
+                                                            setNewComplaint(prev => ({
+                                                                ...prev,
+                                                                subject: data.subject,
+                                                                description: data.description
+                                                            }));
+                                                        } else {
+                                                            if (data.message === "Invalid Token" || data.message === "Access Denied") {
+                                                                alert("Your session has expired or is invalid. Please log out and log in again.");
+                                                            } else {
+                                                                alert(`Failed to generate: ${data.message}`);
+                                                            }
+                                                        }
+                                                    } catch (e) {
+                                                        console.error("AI Request Failed", e);
+                                                        alert("Something went wrong. Please check console.");
+                                                    } finally {
+                                                        setIsGenerating(false);
+                                                    }
+                                                }}
+                                                disabled={isGenerating || !aiPrompt}
+                                                className="bg-orange-600 text-white shrink-0 hover:bg-orange-700"
+                                            >
+                                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                                                {isGenerating ? "Generating..." : "Auto-Fill"}
+                                            </Button>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Briefly describe the issue. AI will generate a formal subject and detailed description.
+                                        </p>
+                                    </div>
                                     <div className="space-y-3">
                                         <Label className="text-base">Subject</Label>
                                         <Input

@@ -36,6 +36,9 @@ import {
     Eye,
     Check,
     X,
+    Sparkles,
+    Wand2,
+    Loader2
 } from "lucide-react";
 
 
@@ -57,6 +60,8 @@ export default function HRLeaves() {
         reason: "",
         duration: "1 Day" // Simple default, ideally calculated
     });
+    const [aiPrompt, setAiPrompt] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Employee Management State
     const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
@@ -331,6 +336,73 @@ export default function HRLeaves() {
                                 </DialogHeader>
 
                                 <div className="space-y-6 py-4">
+                                    {/* AI GENERATION SECTION */}
+                                    <div className="md:col-span-2 space-y-2 p-4 bg-violet-50/50 rounded-lg border border-dashed border-violet-200">
+                                        <Label className="text-violet-700 flex items-center gap-2 font-medium">
+                                            <Sparkles className="h-4 w-4 text-violet-500" />
+                                            AI Leave Assistant
+                                        </Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="e.g. I have a fever and need leave for tomorrow..."
+                                                value={aiPrompt}
+                                                onChange={(e) => setAiPrompt(e.target.value)}
+                                                className="bg-white border-violet-200 focus-visible:ring-violet-500"
+                                            />
+                                            <Button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!aiPrompt) return;
+                                                    setIsGenerating(true);
+                                                    try {
+                                                        const token = localStorage.getItem('token');
+                                                        if (!token) {
+                                                            alert("Authentication token not found. Please log in again.");
+                                                            setIsGenerating(false);
+                                                            return;
+                                                        }
+
+                                                        const res = await apiFetch('/api/ai/generate-leave', {
+                                                            method: 'POST',
+                                                            headers: { 'Authorization': `Bearer ${token}` },
+                                                            body: JSON.stringify({ reason: aiPrompt })
+                                                        });
+
+                                                        const data = await res.json();
+
+                                                        if (res.ok) {
+                                                            setApplyForm(prev => ({
+                                                                ...prev,
+                                                                reason: data.reason,
+                                                                startDate: data.startDate || prev.startDate,
+                                                                endDate: data.endDate || prev.endDate
+                                                            }));
+                                                        } else {
+                                                            if (data.message === "Invalid Token" || data.message === "Access Denied") {
+                                                                alert("Your session has expired or is invalid. Please log out and log in again.");
+                                                            } else {
+                                                                alert(`Failed to generate: ${data.message}`);
+                                                            }
+                                                        }
+                                                    } catch (e) {
+                                                        console.error("AI Request Failed", e);
+                                                        alert("Something went wrong. Please check console.");
+                                                    } finally {
+                                                        setIsGenerating(false);
+                                                    }
+                                                }}
+                                                disabled={isGenerating || !aiPrompt}
+                                                className="bg-violet-600 text-white shrink-0 hover:bg-violet-700"
+                                            >
+                                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                                                {isGenerating ? "Generating..." : "Auto-Fill"}
+                                            </Button>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Describe your reason and dates naturally. AI will auto-fill the form details above.
+                                        </p>
+                                    </div>
+
                                     <div className="grid gap-6 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label>Leave Type</Label>
